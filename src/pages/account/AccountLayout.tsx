@@ -1,9 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { useAuth } from "../../lib/auth-context";
 
 export const AccountLayout = () => {
-  const { user } = useAuth();
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Desktop Navigation */}
