@@ -3,7 +3,11 @@ import type { EquipmentRentalRequestFormData, EquipmentRentalRequestResponse } f
 import type { Customer, UpdateCustomerData, Order, Card } from '../types/customer';
 import { getUser } from './cookies';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_URL;
+
+if (!API_URL) {
+  throw new Error('API_URL is not set');
+}
 
 // Helper function to create headers with optional authorization
 function getAuthHeaders(includeContentType: boolean = true): HeadersInit {
