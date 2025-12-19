@@ -115,8 +115,8 @@ export function AdminServiceRequests() {
                 <div key={request.id} className="border-b pb-4">
                   <div className="grid grid-cols-12 gap-2 text-sm">
                     <div className="col-span-4">
-                      <div className="font-medium text-blue-600 text-sm">{request.customer_name}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{request.customer_email}</div>
+                      <div className="font-medium text-blue-600 text-sm truncate">{request.customer_name}</div>
+                      <div className="text-xs text-gray-500 mt-0.5 truncate">{request.customer_email}</div>
                     </div>
                     <div className="col-span-2 text-xs">
                       {new Date(request.created_at).toLocaleDateString('en-US', {

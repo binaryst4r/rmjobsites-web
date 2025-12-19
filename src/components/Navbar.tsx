@@ -5,17 +5,18 @@ import { useCategories } from "../lib/categories-context";
 import { useCart } from "../lib/cart-context";
 import { MagnifyingGlassIcon, UserIcon } from "@heroicons/react/24/solid";
 import { ShoppingBagIcon } from "@heroicons/react/24/solid";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { api } from "../lib/api";
 import type { Product } from "../types/Product";
 import { formatCentsToDollars } from "../lib/money";
 
 export const Navbar = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { categories } = useCategories();
   const { itemCount } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
@@ -206,19 +207,31 @@ export const Navbar = () => {
                 <div className="flex space-x-8">
                   <Link
                     to="/shop"
-                    className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900"
+                    className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
+                      location.pathname.startsWith('/shop') || location.pathname.startsWith('/products') || location.pathname === '/cart'
+                        ? 'border-red-900 text-gray-900'
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    }`}
                   >
                     Shop Products
                   </Link>
                   <Link
                     to="/request-service"
-                    className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                    className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
+                      location.pathname === '/request-service'
+                        ? 'border-red-900 text-gray-900'
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    }`}
                   >
                     Request Service
                   </Link>
                   <Link
                     to="/rent-equipment"
-                    className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                    className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
+                      location.pathname === '/rent-equipment'
+                        ? 'border-red-900 text-gray-900'
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    }`}
                   >
                     Rent Equipment
                   </Link>
@@ -324,20 +337,12 @@ export const Navbar = () => {
                     className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg outline outline-black/5 transition data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
                   >
                     <MenuItem>
-                      <a
-                        href="#"
+                      <Link
+                        to="/account/my-account"
                         className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
                       >
-                        Your profile
-                      </a>
-                    </MenuItem>
-                    <MenuItem>
-                      <a
-                        href="#"
-                        className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
-                      >
-                        Settings
-                      </a>
+                        Your Account
+                      </Link>
                     </MenuItem>
                     {user.admin && (
                       <MenuItem>
@@ -360,12 +365,12 @@ export const Navbar = () => {
                       </MenuItem>
                     )}
                     <MenuItem>
-                      <a
-                        href="#"
-                        className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
+                      <button
+                        onClick={() => logout()}
+                        className="cursor-pointer w-full text-left block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
                       >
                         Sign out
-                      </a>
+                      </button>
                     </MenuItem>
                   </MenuItems>
                 </Menu>
