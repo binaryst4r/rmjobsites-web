@@ -1,8 +1,9 @@
-import { ReactElement } from 'react';
-import { render, RenderOptions } from '@testing-library/react';
+import type { ReactElement } from 'react';
+import { render, type RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Create a test query client
+// eslint-disable-next-line react-refresh/only-export-components
 export const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {
@@ -30,6 +31,7 @@ export function AllTheProviders({ children }: AllTheProvidersProps) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function renderWithProviders(
   ui: ReactElement,
   options?: Omit<RenderOptions, 'wrapper'>
@@ -38,4 +40,5 @@ export function renderWithProviders(
 }
 
 // Re-export everything from testing-library
+// eslint-disable-next-line react-refresh/only-export-components
 export * from '@testing-library/react';

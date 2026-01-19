@@ -191,9 +191,10 @@ export function Checkout() {
           fulfillmentType
         }
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Checkout error:', err);
-      setError(err.message || 'Payment failed. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Payment failed. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

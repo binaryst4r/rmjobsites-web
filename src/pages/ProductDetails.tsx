@@ -11,7 +11,7 @@ import { useNotification } from "../lib/notification-context";
 export const ProductDetails = () => {
   const { productId } = useParams();
   const [selectedVariationId, setSelectedVariationId] = useState<string | null>(null);
-  const { addItem, itemCount } = useCart();
+  const { addItem } = useCart();
   const { showSuccess } = useNotification();
 
   const { data: productData, isLoading } = useQuery({

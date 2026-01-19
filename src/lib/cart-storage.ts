@@ -55,7 +55,7 @@ export function getCartCount(): number {
   try {
     const count = cookies.get(CART_COUNT_COOKIE);
     return typeof count === 'number' ? count : parseInt(count, 10) || 0;
-  } catch (error) {
+  } catch {
     return 0;
   }
 }

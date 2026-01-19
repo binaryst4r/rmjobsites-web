@@ -81,7 +81,8 @@ const PickupDetailsForm: React.FC<PickupDetailsFormProps> = ({
         time: pickupDetails.time || '10:00',
       });
     }
-  }, []); // Run only once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount with initial values
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6 mb-6">

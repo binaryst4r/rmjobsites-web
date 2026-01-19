@@ -17,8 +17,8 @@ describe('AuthContext', () => {
 
   describe('AuthProvider initialization', () => {
     it('loads user from cookie on mount', async () => {
-      const mockUser = { id: 1, email: 'test@example.com', admin: false };
-      vi.mocked(cookies.getUser).mockReturnValue(mockUser);
+      const mockUserCookie = { id: 1, email: 'test@example.com', admin: false, jwt: 'test-token' };
+      vi.mocked(cookies.getUser).mockReturnValue(mockUserCookie);
 
       const { result } = renderHook(() => useAuth(), {
         wrapper: AuthProvider,
@@ -28,7 +28,12 @@ describe('AuthContext', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.user).toEqual(mockUser);
+      // User should not include jwt field
+      expect(result.current.user).toEqual({
+        id: mockUserCookie.id,
+        email: mockUserCookie.email,
+        admin: mockUserCookie.admin
+      });
       expect(result.current.isAuthenticated).toBe(true);
     });
 
@@ -88,8 +93,8 @@ describe('AuthContext', () => {
 
   describe('logout', () => {
     it('clears user and calls clearUserCookie', async () => {
-      const mockUser = { id: 1, email: 'test@example.com', admin: false };
-      vi.mocked(cookies.getUser).mockReturnValue(mockUser);
+      const mockUserCookie = { id: 1, email: 'test@example.com', admin: false, jwt: 'test-token' };
+      vi.mocked(cookies.getUser).mockReturnValue(mockUserCookie);
 
       const { result } = renderHook(() => useAuth(), {
         wrapper: AuthProvider,
@@ -99,7 +104,12 @@ describe('AuthContext', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.user).toEqual(mockUser);
+      // User should not include jwt field
+      expect(result.current.user).toEqual({
+        id: mockUserCookie.id,
+        email: mockUserCookie.email,
+        admin: mockUserCookie.admin
+      });
 
       act(() => {
         result.current.logout();

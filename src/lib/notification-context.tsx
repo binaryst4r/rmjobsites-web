@@ -23,6 +23,10 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
+  const dismissNotification = useCallback((id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  }, []);
+
   const addNotification = useCallback((
     type: NotificationType,
     message: string,
@@ -46,11 +50,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         dismissNotification(id);
       }, duration);
     }
-  }, []);
-
-  const dismissNotification = useCallback((id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  }, []);
+  }, [dismissNotification]);
 
   const showSuccess = useCallback((message: string, title?: string, duration?: number) => {
     addNotification('success', message, title, duration);
@@ -79,6 +79,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useNotification() {
   const context = useContext(NotificationContext);
   if (context === undefined) {

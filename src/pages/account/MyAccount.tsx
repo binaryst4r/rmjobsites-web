@@ -33,6 +33,7 @@ export const MyAccount = () => {
   // Update form when customer data loads
   useEffect(() => {
     if (customer) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         given_name: customer.given_name || "",
         family_name: customer.family_name || "",

@@ -38,6 +38,7 @@ export interface CreateOrderResponse {
   order: {
     id: string;
     location_id: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     line_items: any[];
     total_money: {
       amount: number;

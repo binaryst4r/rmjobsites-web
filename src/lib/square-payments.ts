@@ -1,5 +1,6 @@
 import { payments, type Card } from '@square/web-sdk';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let squarePayments: any = null;
 let card: Card | null = null;
 
