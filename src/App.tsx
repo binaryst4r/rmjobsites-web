@@ -18,6 +18,7 @@ import { AdminRentalRequests } from "./pages/admin/RentalRequests";
 import { Cart } from "./pages/Cart";
 import { Checkout } from "./pages/Checkout";
 import { OrderConfirmation } from "./pages/OrderConfirmation";
+import Notification from "./components/Notification";
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -25,6 +26,7 @@ function App() {
   return (
     <BrowserRouter>
       <Navbar />
+      <Notification />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/shop" element={<CategoryList />} />

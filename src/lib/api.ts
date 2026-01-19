@@ -42,6 +42,35 @@ export const adminApi = {
     });
     return response.json();
   },
+
+  async getAdminUsers() {
+    const response = await fetch(`${API_URL}/users/admins`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch admin users');
+    }
+
+    return response.json();
+  },
+
+  async assignServiceRequest(serviceRequestId: number, assignedToUserId: number) {
+    const response = await fetch(`${API_URL}/service_requests/${serviceRequestId}/assign`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ assigned_to_user_id: assignedToUserId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to assign service request');
+    }
+
+    return response.json();
+  },
 }
 
 export const api = {
@@ -144,11 +173,17 @@ export const api = {
     return response.json();
   },
 
-  async calculateOrder(lineItems: Array<{ catalog_object_id: string; quantity: string }>) {
+  async calculateOrder(
+    lineItems: Array<{ catalog_object_id: string; quantity: string }>,
+    fulfillmentType: 'PICKUP' | 'SHIPMENT' = 'PICKUP'
+  ) {
     const response = await fetch(`${API_URL}/orders/calculate`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ line_items: lineItems }),
+      body: JSON.stringify({
+        line_items: lineItems,
+        fulfillment_type: fulfillmentType,
+      }),
     });
 
     if (!response.ok) {
@@ -177,11 +212,18 @@ export const api = {
       given_name?: string;
       family_name?: string;
     };
+    fulfillment_type?: 'PICKUP' | 'SHIPMENT';
     shipping_address?: {
       address_line_1?: string;
+      address_line_2?: string;
       locality?: string;
       administrative_district_level_1?: string;
       postal_code?: string;
+      country?: string;
+    };
+    pickup_details?: {
+      date: string;
+      time: string;
     };
   }) {
     const response = await fetch(`${API_URL}/orders`, {

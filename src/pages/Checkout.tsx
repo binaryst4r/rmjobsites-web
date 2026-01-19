@@ -4,6 +4,10 @@ import { useCart } from '../lib/cart-context';
 import { useAuth } from '../lib/auth-context';
 import { api } from '../lib/api';
 import { initializeSquarePayments, initializeCard, tokenizeCard, destroyCard } from '../lib/square-payments';
+import FulfillmentSelector from '../components/FulfillmentSelector';
+import PickupDetailsForm from '../components/PickupDetailsForm';
+import type { FulfillmentType } from '../components/FulfillmentSelector';
+import type { PickupDetails } from '../components/PickupDetailsForm';
 
 interface OrderSummary {
   subtotal: number;
@@ -28,9 +32,27 @@ export function Checkout() {
   const [givenName, setGivenName] = useState('');
   const [familyName, setFamilyName] = useState('');
   const [address, setAddress] = useState('');
+  const [addressLine2, setAddressLine2] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [postalCode, setPostalCode] = useState('');
+
+  // Fulfillment state
+  const [fulfillmentType, setFulfillmentType] = useState<FulfillmentType>('PICKUP');
+  const [pickupDetails, setPickupDetails] = useState<PickupDetails>({
+    date: '',
+    time: '10:00',
+  });
+
+  // Validation errors
+  const [validationErrors, setValidationErrors] = useState<{
+    address?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    pickupDate?: string;
+    pickupTime?: string;
+  }>({});
 
   // Redirect if cart is empty (wait for cart to load first, skip if order just completed)
   useEffect(() => {
@@ -77,7 +99,7 @@ export function Checkout() {
           quantity: item.quantity.toString()
         }));
 
-        const result = await api.calculateOrder(lineItems);
+        const result = await api.calculateOrder(lineItems, fulfillmentType);
         setOrderSummary({
           subtotal: result.subtotal,
           taxes: result.taxes,
@@ -93,11 +115,39 @@ export function Checkout() {
     if (items.length > 0) {
       calculateOrder();
     }
-  }, [items]);
+  }, [items, fulfillmentType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setValidationErrors({});
+
+    // Validate based on fulfillment type
+    const errors: typeof validationErrors = {};
+
+    if (fulfillmentType === 'SHIPMENT') {
+      if (!address.trim()) errors.address = 'Address is required for shipping';
+      if (!city.trim()) errors.city = 'City is required for shipping';
+      if (!state.trim()) errors.state = 'State is required for shipping';
+      if (!postalCode.trim()) errors.postalCode = 'Postal code is required for shipping';
+    } else if (fulfillmentType === 'PICKUP') {
+      if (!pickupDetails.date) errors.pickupDate = 'Pickup date is required';
+      if (!pickupDetails.time) errors.pickupTime = 'Pickup time is required';
+
+      // Check if date is a weekend
+      const pickupDate = new Date(pickupDetails.date + 'T00:00:00');
+      const day = pickupDate.getDay();
+      if (day === 0 || day === 6) {
+        errors.pickupDate = 'Weekend pickup is not available. Please select a weekday.';
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      setError('Please fix the validation errors before continuing.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -119,18 +169,28 @@ export function Checkout() {
           given_name: givenName || undefined,
           family_name: familyName || undefined
         },
-        shipping_address: address ? {
+        fulfillment_type: fulfillmentType,
+        shipping_address: fulfillmentType === 'SHIPMENT' ? {
           address_line_1: address,
+          address_line_2: addressLine2 || undefined,
           locality: city,
           administrative_district_level_1: state,
-          postal_code: postalCode
-        } : undefined
+          postal_code: postalCode,
+          country: 'US'
+        } : undefined,
+        pickup_details: fulfillmentType === 'PICKUP' ? pickupDetails : undefined
       });
 
       // Mark order as completed, clear cart, and navigate to confirmation
       setOrderCompleted(true);
       clearCart();
-      navigate('/order-confirmation', { state: { order: result.order, payment: result.payment } });
+      navigate('/order-confirmation', {
+        state: {
+          order: result.order,
+          payment: result.payment,
+          fulfillmentType
+        }
+      });
     } catch (err: any) {
       console.error('Checkout error:', err);
       setError(err.message || 'Payment failed. Please try again.');
@@ -170,6 +230,107 @@ export function Checkout() {
                 </div>
               </div>
 
+              {/* Fulfillment Selection */}
+              <FulfillmentSelector
+                selectedType={fulfillmentType}
+                onTypeChange={setFulfillmentType}
+              />
+
+              {/* Conditional: Pickup Details or Shipping Address */}
+              {fulfillmentType === 'PICKUP' ? (
+                <PickupDetailsForm
+                  pickupDetails={pickupDetails}
+                  onPickupDetailsChange={setPickupDetails}
+                  errors={{
+                    date: validationErrors.pickupDate,
+                    time: validationErrors.pickupTime,
+                  }}
+                />
+              ) : (
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <h2 className="text-lg font-semibold mb-4">Shipping Address</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm mb-2">
+                        Address Line 1 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        className={`w-full px-4 py-2 border rounded ${
+                          validationErrors.address ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        required
+                      />
+                      {validationErrors.address && (
+                        <p className="mt-1 text-sm text-red-600">{validationErrors.address}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-2">Address Line 2</label>
+                      <input
+                        type="text"
+                        value={addressLine2}
+                        onChange={(e) => setAddressLine2(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-2">
+                        City <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        className={`w-full px-4 py-2 border rounded ${
+                          validationErrors.city ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        required
+                      />
+                      {validationErrors.city && (
+                        <p className="mt-1 text-sm text-red-600">{validationErrors.city}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-2">
+                        State / Province <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={state}
+                        onChange={(e) => setState(e.target.value)}
+                        className={`w-full px-4 py-2 border rounded ${
+                          validationErrors.state ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        required
+                      />
+                      {validationErrors.state && (
+                        <p className="mt-1 text-sm text-red-600">{validationErrors.state}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm mb-2">
+                        Postal Code <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={postalCode}
+                        onChange={(e) => setPostalCode(e.target.value)}
+                        className={`w-full px-4 py-2 border rounded ${
+                          validationErrors.postalCode ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        required
+                      />
+                      {validationErrors.postalCode && (
+                        <p className="mt-1 text-sm text-red-600">{validationErrors.postalCode}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Payment Section */}
               <div>
                 <h2 className="text-lg font-semibold mb-4">Payment</h2>
@@ -197,49 +358,6 @@ export function Checkout() {
                   <div>
                     <label className="block text-sm mb-2">Card Details</label>
                     <div id="card-container" className="border border-gray-300 rounded p-4"></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Shipping Info Section */}
-              <div>
-                <h2 className="text-lg font-semibold mb-4">Shipping Info</h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm mb-2">Address</label>
-                    <input
-                      type="text"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm mb-2">City</label>
-                    <input
-                      type="text"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm mb-2">State / Province</label>
-                    <input
-                      type="text"
-                      value={state}
-                      onChange={(e) => setState(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm mb-2">Postal Code</label>
-                    <input
-                      type="text"
-                      value={postalCode}
-                      onChange={(e) => setPostalCode(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded"
-                    />
                   </div>
                 </div>
               </div>
@@ -368,6 +486,107 @@ export function Checkout() {
             </div>
           </div>
 
+          {/* Fulfillment Selection */}
+          <FulfillmentSelector
+            selectedType={fulfillmentType}
+            onTypeChange={setFulfillmentType}
+          />
+
+          {/* Conditional: Pickup Details or Shipping Address */}
+          {fulfillmentType === 'PICKUP' ? (
+            <PickupDetailsForm
+              pickupDetails={pickupDetails}
+              onPickupDetailsChange={setPickupDetails}
+              errors={{
+                date: validationErrors.pickupDate,
+                time: validationErrors.pickupTime,
+              }}
+            />
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm p-4">
+              <h2 className="text-lg font-semibold mb-3">Shipping Address</h2>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm mb-1">
+                    Address Line 1 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className={`w-full px-3 py-2 border rounded text-sm ${
+                      validationErrors.address ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    required
+                  />
+                  {validationErrors.address && (
+                    <p className="mt-1 text-xs text-red-600">{validationErrors.address}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">Address Line 2</label>
+                  <input
+                    type="text"
+                    value={addressLine2}
+                    onChange={(e) => setAddressLine2(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">
+                    City <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className={`w-full px-3 py-2 border rounded text-sm ${
+                      validationErrors.city ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    required
+                  />
+                  {validationErrors.city && (
+                    <p className="mt-1 text-xs text-red-600">{validationErrors.city}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">
+                    State / Province <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    className={`w-full px-3 py-2 border rounded text-sm ${
+                      validationErrors.state ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    required
+                  />
+                  {validationErrors.state && (
+                    <p className="mt-1 text-xs text-red-600">{validationErrors.state}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">
+                    Postal Code <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                    className={`w-full px-3 py-2 border rounded text-sm ${
+                      validationErrors.postalCode ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    required
+                  />
+                  {validationErrors.postalCode && (
+                    <p className="mt-1 text-xs text-red-600">{validationErrors.postalCode}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Payment Section */}
           <div>
             <h2 className="text-lg font-semibold mb-3">Payment</h2>
@@ -395,49 +614,6 @@ export function Checkout() {
               <div>
                 <label className="block text-sm mb-1">Card Details</label>
                 <div id="card-container" className="border border-gray-300 rounded p-3"></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Shipping Info Section */}
-          <div>
-            <h2 className="text-lg font-semibold mb-3">Shipping Info</h2>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm mb-1">Address</label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">City</label>
-                <input
-                  type="text"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">State / Province</label>
-                <input
-                  type="text"
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Postal Code</label>
-                <input
-                  type="text"
-                  value={postalCode}
-                  onChange={(e) => setPostalCode(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-                />
               </div>
             </div>
           </div>

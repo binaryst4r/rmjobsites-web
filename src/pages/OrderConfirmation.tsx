@@ -22,6 +22,32 @@ interface Order {
   total_tax_money?: Money;
   total_service_charge_money?: Money;
   line_items?: OrderLineItem[];
+  fulfillments?: Array<{
+    type?: string;
+    state?: string;
+    pickup_details?: {
+      pickup_at?: string;
+      recipient?: {
+        display_name?: string;
+        email_address?: string;
+      };
+      note?: string;
+    };
+    shipment_details?: {
+      recipient?: {
+        display_name?: string;
+        email_address?: string;
+        address?: {
+          address_line_1?: string;
+          address_line_2?: string;
+          locality?: string;
+          administrative_district_level_1?: string;
+          postal_code?: string;
+          country?: string;
+        };
+      };
+    };
+  }>;
 }
 
 interface Payment {
@@ -38,6 +64,7 @@ interface Payment {
 interface OrderConfirmationState {
   order: Order;
   payment?: Payment;
+  fulfillmentType?: 'PICKUP' | 'SHIPMENT';
 }
 
 export function OrderConfirmation() {
@@ -56,7 +83,7 @@ export function OrderConfirmation() {
     return null;
   }
 
-  const { order, payment } = state;
+  const { order, payment, fulfillmentType } = state;
   const totalAmount = order.total_money?.amount || 0;
 
   const formatCurrency = (cents: number) => {
@@ -71,6 +98,28 @@ export function OrderConfirmation() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // Extract fulfillment details from order
+  const fulfillment = order.fulfillments?.[0];
+  const pickupDetails = fulfillment?.pickup_details;
+  const shipmentDetails = fulfillment?.shipment_details;
+
+  const formatPickupTime = (isoString: string) => {
+    try {
+      const date = new Date(isoString);
+      return date.toLocaleString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch {
+      return isoString;
+    }
   };
 
   return (
@@ -167,6 +216,56 @@ export function OrderConfirmation() {
               <div className="text-gray-600">
                 {payment.card_details.card?.card_brand || 'Card'} ending in {payment.card_details.card?.last_4 || '****'}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Fulfillment Information */}
+        {(fulfillmentType === 'PICKUP' || pickupDetails) && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">Pickup Information</h2>
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Pickup Location</p>
+                <p className="font-medium">7204 E 53rd Pl</p>
+                <p className="font-medium">Commerce City, CO 80022</p>
+              </div>
+              {pickupDetails?.pickup_at && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Scheduled Pickup Time</p>
+                  <p className="font-medium">{formatPickupTime(pickupDetails.pickup_at)}</p>
+                </div>
+              )}
+              {pickupDetails?.note && (
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                  <p className="text-sm text-blue-800">{pickupDetails.note}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {(fulfillmentType === 'SHIPMENT' || shipmentDetails) && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">Shipping Information</h2>
+            <div className="space-y-2">
+              {shipmentDetails?.recipient?.display_name && (
+                <p className="font-medium">{shipmentDetails.recipient.display_name}</p>
+              )}
+              {shipmentDetails?.recipient?.address && (
+                <div className="text-gray-700">
+                  <p>{shipmentDetails.recipient.address.address_line_1}</p>
+                  {shipmentDetails.recipient.address.address_line_2 && (
+                    <p>{shipmentDetails.recipient.address.address_line_2}</p>
+                  )}
+                  <p>
+                    {shipmentDetails.recipient.address.locality}, {shipmentDetails.recipient.address.administrative_district_level_1} {shipmentDetails.recipient.address.postal_code}
+                  </p>
+                  {shipmentDetails.recipient.address.country && (
+                    <p>{shipmentDetails.recipient.address.country}</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

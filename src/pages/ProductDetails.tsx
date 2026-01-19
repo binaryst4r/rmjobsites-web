@@ -6,11 +6,13 @@ import { formatCentsToDollars } from "../lib/money";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
 import { useCart } from "../lib/cart-context";
+import { useNotification } from "../lib/notification-context";
 
 export const ProductDetails = () => {
   const { productId } = useParams();
   const [selectedVariationId, setSelectedVariationId] = useState<string | null>(null);
   const { addItem, itemCount } = useCart();
+  const { showSuccess } = useNotification();
 
   const { data: productData, isLoading } = useQuery({
     queryKey: ["product", productId],
@@ -63,7 +65,7 @@ export const ProductDetails = () => {
       imageUrl: selectedVariation.image_urls?.[0] || product.image_urls[0],
     });
 
-    console.log("Added to cart! Total items:", itemCount + 1);
+    showSuccess(`${product.name} - ${selectedVariation.name} added to cart!`, 'Added to Cart');
   };
 
   return (

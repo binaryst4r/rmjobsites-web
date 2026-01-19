@@ -1,3 +1,10 @@
+export interface User {
+  id: number;
+  email: string;
+  given_name?: string;
+  family_name?: string;
+}
+
 export interface ServiceRequest {
   id: number;
   user_id: number | null;
@@ -16,6 +23,7 @@ export interface ServiceRequest {
   serial_number: string;
   created_at: string;
   updated_at: string;
+  assigned_user: User | null;
 }
 
 export interface ServiceRequestFormData {
