@@ -3,7 +3,13 @@ import { useCart } from '../lib/cart-context';
 import { formatCentsToDollars } from '../lib/money';
 
 export function Cart() {
-  const { items, removeItem, subtotal } = useCart();
+  const { items, removeItem, subtotal, clearCart } = useCart();
+
+  const handleClearCart = () => {
+    if (window.confirm('Are you sure you want to clear all items from your cart?')) {
+      clearCart();
+    }
+  };
 
   if (items.length === 0) {
     return (
@@ -93,6 +99,16 @@ export function Cart() {
             or Continue Shopping
           </Link>
         </div>
+
+        {/* Clear Cart Button */}
+        <div className="mt-4 text-center">
+          <button
+            onClick={handleClearCart}
+            className="text-sm text-gray-500 hover:text-red-700 transition-colors"
+          >
+            Clear Cart
+          </button>
+        </div>
       </div>
 
       {/* Mobile Layout */}
@@ -158,6 +174,19 @@ export function Cart() {
           >
             Checkout
           </Link>
+
+          {/* Continue Shopping and Clear Cart */}
+          <div className="flex justify-between items-center px-1">
+            <Link to="/shop" className="text-xs text-red-900 hover:text-red-700">
+              Continue Shopping
+            </Link>
+            <button
+              onClick={handleClearCart}
+              className="text-xs text-gray-500 hover:text-red-700 transition-colors"
+            >
+              Clear Cart
+            </button>
+          </div>
         </div>
       </div>
     </div>
