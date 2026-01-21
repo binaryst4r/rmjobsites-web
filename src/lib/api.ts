@@ -1,6 +1,7 @@
 import type { ServiceRequestFormData, ServiceRequestResponse } from '../types/ServiceRequest';
 import type { EquipmentRentalRequestFormData, EquipmentRentalRequestResponse } from '../types/EquipmentRentalRequest';
 import type { Customer, UpdateCustomerData, Order, Card } from '../types/customer';
+import type { User } from '../types/auth';
 import { getUser } from './cookies';
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -86,6 +87,20 @@ export const api = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Login failed');
+    }
+
+    return response.json();
+  },
+
+  async getProfile(): Promise<{ user: User }> {
+    const response = await fetch(`${API_URL}/auth/profile`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch profile');
     }
 
     return response.json();
@@ -241,7 +256,7 @@ export const api = {
   },
 
   // Customer API methods
-  async getCustomer(customerId: string = 'me'): Promise<Customer> {
+  async getCustomer(customerId: string): Promise<Customer> {
     const response = await fetch(`${API_URL}/customers/${customerId}`, {
       method: 'GET',
       headers: getAuthHeaders(),
@@ -255,7 +270,7 @@ export const api = {
     return response.json();
   },
 
-  async updateCustomer(customerId: string = 'me', data: UpdateCustomerData): Promise<Customer> {
+  async updateCustomer(customerId: string, data: UpdateCustomerData): Promise<Customer> {
     const response = await fetch(`${API_URL}/customers/${customerId}`, {
       method: 'PATCH',
       headers: getAuthHeaders(),
@@ -270,7 +285,7 @@ export const api = {
     return response.json();
   },
 
-  async getCustomerOrders(customerId: string = 'me'): Promise<{ orders: Order[] }> {
+  async getCustomerOrders(customerId: string): Promise<{ orders: Order[] }> {
     const response = await fetch(`${API_URL}/customers/${customerId}/orders`, {
       method: 'GET',
       headers: getAuthHeaders(),
@@ -284,7 +299,7 @@ export const api = {
     return response.json();
   },
 
-  async getCustomerCards(customerId: string = 'me'): Promise<{ cards: Card[] }> {
+  async getCustomerCards(customerId: string): Promise<{ cards: Card[] }> {
     const response = await fetch(`${API_URL}/customers/${customerId}/cards`, {
       method: 'GET',
       headers: getAuthHeaders(),
@@ -298,7 +313,7 @@ export const api = {
     return response.json();
   },
 
-  async deleteCustomerCard(customerId: string = 'me', cardId: string): Promise<void> {
+  async deleteCustomerCard(customerId: string, cardId: string): Promise<void> {
     const response = await fetch(`${API_URL}/customers/${customerId}/cards/${cardId}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),

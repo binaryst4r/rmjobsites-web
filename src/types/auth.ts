@@ -2,6 +2,16 @@ export interface User {
   id: number;
   email: string;
   admin: boolean;
+  square_customer_id?: string;
+  given_name?: string;
+  family_name?: string;
+  phone_number?: string;
+  address_line_1?: string;
+  address_line_2?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
 }
 
 export interface AuthResponse {

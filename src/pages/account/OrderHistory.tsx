@@ -1,11 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router";
 import { api } from "../../lib/api";
-import type { Order } from "../../types/customer";
+import { useAuth } from "../../lib/auth-context";
+import type { Order, LineItem } from "../../types/customer";
 
 export const OrderHistory = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const squareCustomerId = user?.square_customer_id;
+
   const { data, isLoading, error } = useQuery<{ orders: Order[] }>({
-    queryKey: ["customer-orders"],
-    queryFn: () => api.getCustomerOrders(),
+    queryKey: ["customer-orders", squareCustomerId],
+    queryFn: () => api.getCustomerOrders(squareCustomerId!),
+    enabled: !!squareCustomerId,
   });
 
   const formatDate = (dateString?: string) => {
@@ -25,6 +32,43 @@ export const OrderHistory = () => {
       currency: currency || "USD",
     }).format(amount / 100);
   };
+
+  const handleBuyAgain = (item: LineItem) => {
+    // catalog_object_id is the variation/product ID - navigate to product page
+    if (!item.catalog_object_id) return;
+    navigate(`/shop/product/${item.catalog_object_id}`);
+  };
+
+  const handleShopSimilar = async (item: LineItem) => {
+    // Fetch product to get category for "shop similar"
+    if (!item.catalog_object_id) return;
+
+    try {
+      const product = await api.getProductById(item.catalog_object_id);
+      if (product?.category_ids && product.category_ids.length > 0) {
+        // Navigate to the first category
+        navigate(`/shop/category/${product.category_ids[0]}`);
+      } else {
+        // Fallback to main shop page
+        navigate('/shop');
+      }
+    } catch (error) {
+      console.error('Failed to fetch product:', error);
+      navigate('/shop');
+    }
+  };
+
+  // Show message if no Square customer exists yet
+  if (!squareCustomerId) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-4">My Orders</h1>
+        <p className="text-gray-600">
+          You don't have any orders yet. Your order history will appear here after you make your first purchase.
+        </p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -74,13 +118,13 @@ export const OrderHistory = () => {
                 </p>
               </div>
               <div className="flex space-x-4 text-sm">
-                <button className="text-red-800 hover:text-red-900 font-medium">
+                {/* <button className="text-red-800 hover:text-red-900 font-medium">
                   Manage Order
                 </button>
                 <span className="text-gray-300">|</span>
                 <button className="text-red-800 hover:text-red-900 font-medium">
                   View Invoice
-                </button>
+                </button> */}
               </div>
             </div>
 
@@ -121,10 +165,16 @@ export const OrderHistory = () => {
 
                   {/* Action Buttons */}
                   <div className="flex flex-col space-y-2 mt-4 md:mt-0 w-full md:w-auto">
-                    <button className="bg-red-900 text-white px-6 py-2 rounded-md hover:bg-red-800 font-medium">
+                    <button
+                      onClick={() => handleBuyAgain(item)}
+                      className="bg-red-900 text-white px-6 py-2 rounded-md hover:bg-red-800 font-medium"
+                    >
                       Buy Again
                     </button>
-                    <button className="border border-gray-300 px-6 py-2 rounded-md hover:bg-gray-50 font-medium">
+                    <button
+                      onClick={() => handleShopSimilar(item)}
+                      className="border border-gray-300 px-6 py-2 rounded-md hover:bg-gray-50 font-medium"
+                    >
                       Shop Similar
                     </button>
                   </div>

@@ -19,7 +19,7 @@ interface OrderSummary {
 export function Checkout() {
   const navigate = useNavigate();
   const { items, clearCart, isLoading: cartLoading } = useCart();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -180,6 +180,9 @@ export function Checkout() {
         } : undefined,
         pickup_details: fulfillmentType === 'PICKUP' ? pickupDetails : undefined
       });
+
+      // Refresh user profile to get updated square_customer_id
+      await refreshProfile();
 
       // Mark order as completed, clear cart, and navigate to confirmation
       setOrderCompleted(true);

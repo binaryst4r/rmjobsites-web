@@ -1,21 +1,26 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
+import { useAuth } from "../../lib/auth-context";
 import type { Customer, Card } from "../../types/customer";
 
 export const MyAccount = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const squareCustomerId = user?.square_customer_id;
 
-  // Fetch customer data
+  // Fetch customer data only if square_customer_id exists
   const { data: customer, isLoading: customerLoading } = useQuery<Customer>({
-    queryKey: ["customer"],
-    queryFn: () => api.getCustomer(),
+    queryKey: ["customer", squareCustomerId],
+    queryFn: () => api.getCustomer(squareCustomerId!),
+    enabled: !!squareCustomerId,
   });
 
-  // Fetch customer cards
+  // Fetch customer cards only if square_customer_id exists
   const { data: cardsData, isLoading: cardsLoading } = useQuery<{ cards: Card[] }>({
-    queryKey: ["customer-cards"],
-    queryFn: () => api.getCustomerCards(),
+    queryKey: ["customer-cards", squareCustomerId],
+    queryFn: () => api.getCustomerCards(squareCustomerId!),
+    enabled: !!squareCustomerId,
   });
 
   // Form state
@@ -50,7 +55,10 @@ export const MyAccount = () => {
   // Update customer mutation
   const updateMutation = useMutation({
     mutationFn: (data: typeof formData) => {
-      return api.updateCustomer("me", {
+      if (!squareCustomerId) {
+        throw new Error("No Square customer ID found");
+      }
+      return api.updateCustomer(squareCustomerId, {
         given_name: data.given_name,
         family_name: data.family_name,
         email: data.email,
@@ -75,7 +83,12 @@ export const MyAccount = () => {
 
   // Delete card mutation
   const deleteCardMutation = useMutation({
-    mutationFn: (cardId: string) => api.deleteCustomerCard("me", cardId),
+    mutationFn: (cardId: string) => {
+      if (!squareCustomerId) {
+        throw new Error("No Square customer ID found");
+      }
+      return api.deleteCustomerCard(squareCustomerId, cardId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customer-cards"] });
     },
@@ -94,6 +107,18 @@ export const MyAccount = () => {
       deleteCardMutation.mutate(cardId);
     }
   };
+
+  // Show message if no Square customer exists yet
+  if (!squareCustomerId) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">My Account</h1>
+        <p className="text-gray-600">
+          You don't have a customer profile yet. Your profile will be created when you make your first purchase.
+        </p>
+      </div>
+    );
+  }
 
   if (customerLoading) {
     return (

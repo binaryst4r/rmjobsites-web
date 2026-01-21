@@ -8,6 +8,16 @@ type UserCookie = {
   email: string;
   admin: boolean;
   jwt: string;
+  square_customer_id?: string;
+  given_name?: string;
+  family_name?: string;
+  phone_number?: string;
+  address_line_1?: string;
+  address_line_2?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
 }
 
 export const setUser = (user: User, token: string) => {
@@ -17,6 +27,16 @@ export const setUser = (user: User, token: string) => {
     email: user.email,
     admin: user.admin,
     jwt: token,
+    square_customer_id: user.square_customer_id,
+    given_name: user.given_name,
+    family_name: user.family_name,
+    phone_number: user.phone_number,
+    address_line_1: user.address_line_1,
+    address_line_2: user.address_line_2,
+    city: user.city,
+    state: user.state,
+    postal_code: user.postal_code,
+    country: user.country,
   };
   return cookies.set(import.meta.env.VITE_USER_COOKIE, payload, { path: '/', expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
 };
