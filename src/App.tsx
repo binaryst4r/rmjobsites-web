@@ -3,6 +3,8 @@ import { useAuth } from "./lib/auth-context";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import { Navbar } from "./components/Navbar";
 import { Account } from "./pages/Account";
 import { MyAccount } from "./pages/account/MyAccount";
@@ -19,6 +21,11 @@ import { Cart } from "./pages/Cart";
 import { Checkout } from "./pages/Checkout";
 import { OrderConfirmation } from "./pages/OrderConfirmation";
 import Notification from "./components/Notification";
+import { LandingPage } from "./pages/marketing/LandingPage";
+import { AboutPage } from "./pages/marketing/AboutPage";
+import { ContactPage } from "./pages/marketing/ContactPage";
+import { ProjectsPage } from "./pages/marketing/ProjectsPage";
+import { ServicesPage } from "./pages/marketing/ServicesPage";
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -28,12 +35,22 @@ function App() {
       <Navbar />
       <Notification />
       <Routes>
-        <Route path="/" element={<Home />} />
+        {/* Marketing Pages */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/dashboard" element={<Home />} />
+
+        {/* Shop Routes */}
         <Route path="/shop" element={<CategoryList />} />
         <Route path="/shop/category/:categoryId" element={<ProductsByCategory />} />
         <Route path="/shop/product/:productId" element={<ProductDetails />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
 
         {/* Account Routes with Nested Routing */}
         <Route path="/account" element={<Account />}>

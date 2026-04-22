@@ -12,6 +12,7 @@ export interface User {
   state?: string;
   postal_code?: string;
   country?: string;
+  company_name?: string;
 }
 
 export interface AuthResponse {

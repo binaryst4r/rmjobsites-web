@@ -97,8 +97,8 @@ export function AdminServiceRequests() {
               className="grid grid-cols-12 gap-4 items-center border-b py-6 hover:bg-gray-50 transition-colors"
             >
               <div className="col-span-2">
-                <div className="font-medium text-blue-600">{request.customer_name}</div>
-                <div className="text-sm text-gray-500 mt-1">{request.customer_email}</div>
+                <div className="font-medium text-blue-600">{request.customer_email}</div>
+                <div className="text-sm text-gray-500 mt-1">{request.customer_name}</div>
               </div>
               <div className="col-span-2 text-sm">
                 {new Date(request.created_at).toLocaleDateString('en-US', {
@@ -188,8 +188,8 @@ export function AdminServiceRequests() {
                 <div key={request.id} className="border rounded-lg p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <div className="font-medium text-blue-600 text-sm">{request.customer_name}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{request.customer_email}</div>
+                      <div className="font-medium text-blue-600 text-sm">{request.customer_email}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{request.customer_name}</div>
                       <div className="text-xs text-gray-500 mt-1">
                         {new Date(request.created_at).toLocaleDateString('en-US', {
                           month: 'numeric',

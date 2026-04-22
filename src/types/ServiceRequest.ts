@@ -14,13 +14,15 @@ export interface ServiceRequest {
   service_requested: string;
   pickup_date: string;
   return_date: string;
-  dropped_or_impacted: boolean;
-  needs_replacement_accessories: boolean;
-  needs_rush: boolean;
+  dropped_or_impacted: boolean | null;
+  needs_replacement_accessories: string | null;
   needs_rental: boolean;
   manufacturer: string;
   model: string;
   serial_number: string;
+  turn_around_time: string;
+  after_hours_dropoff: boolean;
+  notes: string | null;
   created_at: string;
   updated_at: string;
   assigned_user: User | null;
@@ -28,17 +30,20 @@ export interface ServiceRequest {
 
 export interface ServiceRequestFormData {
   customer_name: string;
+  customer_email: string;
   company: string;
   service_requested: string;
   pickup_date: string;
   return_date: string;
-  dropped_or_impacted: boolean;
-  needs_replacement_accessories: boolean;
-  needs_rush: boolean;
+  turn_around_time: string;
+  after_hours_dropoff: boolean;
+  dropped_or_impacted: boolean | null;
+  needs_replacement_accessories: string | null;
   needs_rental: boolean;
   manufacturer: string;
   model: string;
   serial_number: string;
+  notes: string;
 }
 
 export interface ServiceRequestResponse {

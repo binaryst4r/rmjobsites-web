@@ -18,6 +18,10 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // Determine if we're on a marketing page or shop page
+  const marketingPaths = ['/', '/about', '/contact', '/projects', '/services'];
+  const isMarketingPage = marketingPaths.includes(location.pathname);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -205,36 +209,83 @@ export const Navbar = () => {
             >
               {!isSearchOpen ? (
                 <div className="flex space-x-8">
-                  <Link
-                    to="/shop"
-                    className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
-                      location.pathname.startsWith('/shop') || location.pathname.startsWith('/products') || location.pathname === '/cart'
-                        ? 'border-red-900 text-gray-900'
-                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                    }`}
-                  >
-                    Shop Products
-                  </Link>
-                  <Link
-                    to="/request-service"
-                    className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
-                      location.pathname === '/request-service'
-                        ? 'border-red-900 text-gray-900'
-                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                    }`}
-                  >
-                    Request Service
-                  </Link>
-                  <Link
-                    to="/rent-equipment"
-                    className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
-                      location.pathname === '/rent-equipment'
-                        ? 'border-red-900 text-gray-900'
-                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                    }`}
-                  >
-                    Rent Equipment
-                  </Link>
+                  {isMarketingPage ? (
+                    <>
+                      <Link
+                        to="/about"
+                        className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
+                          location.pathname === '/about'
+                            ? 'border-red-900 text-gray-900'
+                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                        }`}
+                      >
+                        About
+                      </Link>
+                      <Link
+                        to="/services"
+                        className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
+                          location.pathname === '/services'
+                            ? 'border-red-900 text-gray-900'
+                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                        }`}
+                      >
+                        Services
+                      </Link>
+                      <Link
+                        to="/projects"
+                        className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
+                          location.pathname === '/projects'
+                            ? 'border-red-900 text-gray-900'
+                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                        }`}
+                      >
+                        Projects
+                      </Link>
+                      <Link
+                        to="/contact"
+                        className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
+                          location.pathname === '/contact'
+                            ? 'border-red-900 text-gray-900'
+                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                        }`}
+                      >
+                        Contact
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to="/shop"
+                        className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
+                          location.pathname.startsWith('/shop') || location.pathname.startsWith('/products') || location.pathname === '/cart'
+                            ? 'border-red-900 text-gray-900'
+                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                        }`}
+                      >
+                        Shop Products
+                      </Link>
+                      <Link
+                        to="/request-service"
+                        className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
+                          location.pathname === '/request-service'
+                            ? 'border-red-900 text-gray-900'
+                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                        }`}
+                      >
+                        Request Service
+                      </Link>
+                      <Link
+                        to="/rent-equipment"
+                        className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
+                          location.pathname === '/rent-equipment'
+                            ? 'border-red-900 text-gray-900'
+                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                        }`}
+                      >
+                        Rent Equipment
+                      </Link>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="relative w-96">
@@ -313,81 +364,92 @@ export const Navbar = () => {
               )}
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:items-center absolute right-0">
-              <button
-                type="button"
-                onClick={handleSearchToggle}
-                className="relative rounded-full p-1 text-black hover:text-gray-800 focus:outline-2 focus:outline-offset-2 focus:outline-red-900"
-              >
-                <span className="absolute -inset-1.5" />
-                <span className="sr-only">Search</span>
-                <MagnifyingGlassIcon aria-hidden="true" className="size-6" />
-              </button>
-
-              {/* Profile dropdown */}
-              {user && (
-                <Menu as="div" className="relative ml-3">
-                  <MenuButton className="relative flex rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                    <span className="absolute -inset-1.5" />
-                    <span className="sr-only">Open user menu</span>
-                    <UserIcon aria-hidden="true" className="size-6" />
-                  </MenuButton>
-
-                  <MenuItems
-                    transition
-                    className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg outline outline-black/5 transition data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
+              {isMarketingPage ? (
+                <Link
+                  to="/shop"
+                  className="btn-primary inline-flex items-center px-4 py-2 text-sm font-medium"
+                >
+                  Shop Now
+                </Link>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSearchToggle}
+                    className="relative rounded-full p-1 text-black hover:text-gray-800 focus:outline-2 focus:outline-offset-2 focus:outline-red-900"
                   >
-                    <MenuItem>
-                      <Link
-                        to="/account/my-account"
-                        className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
+                    <span className="absolute -inset-1.5" />
+                    <span className="sr-only">Search</span>
+                    <MagnifyingGlassIcon aria-hidden="true" className="size-6" />
+                  </button>
+
+                  {/* Profile dropdown */}
+                  {user && (
+                    <Menu as="div" className="relative ml-3">
+                      <MenuButton className="relative flex rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                        <span className="absolute -inset-1.5" />
+                        <span className="sr-only">Open user menu</span>
+                        <UserIcon aria-hidden="true" className="size-6" />
+                      </MenuButton>
+
+                      <MenuItems
+                        transition
+                        className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg outline outline-black/5 transition data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
                       >
-                        Your Account
-                      </Link>
-                    </MenuItem>
-                    {user.admin && (
-                      <MenuItem>
-                        <Link
-                          to="/admin/service-requests"
-                          className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
-                        >
-                          View Service Requests
-                        </Link>
-                      </MenuItem>
+                        <MenuItem>
+                          <Link
+                            to="/account/my-account"
+                            className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
+                          >
+                            Your Account
+                          </Link>
+                        </MenuItem>
+                        {user.admin && (
+                          <MenuItem>
+                            <Link
+                              to="/admin/service-requests"
+                              className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
+                            >
+                              View Service Requests
+                            </Link>
+                          </MenuItem>
+                        )}
+                        {user.admin && (
+                          <MenuItem>
+                            <Link
+                              to="/admin/rental-requests"
+                              className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
+                            >
+                              View Rental Requests
+                            </Link>
+                          </MenuItem>
+                        )}
+                        <MenuItem>
+                          <button
+                            onClick={() => logout()}
+                            className="cursor-pointer w-full text-left block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
+                          >
+                            Sign out
+                          </button>
+                        </MenuItem>
+                      </MenuItems>
+                    </Menu>
+                  )}
+                  <Link
+                    to="/cart"
+                    className="relative rounded-full p-1 text-black hover:text-gray-800 focus:outline-2 focus:outline-offset-2 focus:outline-red-900 ml-3"
+                  >
+                    <span className="absolute -inset-1.5" />
+                    <span className="sr-only">Shopping cart</span>
+                    <ShoppingBagIcon aria-hidden="true" className="size-6" />
+                    {itemCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-900 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                        {itemCount}
+                      </span>
                     )}
-                    {user.admin && (
-                      <MenuItem>
-                        <Link
-                          to="/admin/rental-requests"
-                          className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
-                        >
-                          View Rental Requests
-                        </Link>
-                      </MenuItem>
-                    )}
-                    <MenuItem>
-                      <button
-                        onClick={() => logout()}
-                        className="cursor-pointer w-full text-left block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
-                      >
-                        Sign out
-                      </button>
-                    </MenuItem>
-                  </MenuItems>
-                </Menu>
+                  </Link>
+                </>
               )}
-              <Link
-                to="/cart"
-                className="relative rounded-full p-1 text-black hover:text-gray-800 focus:outline-2 focus:outline-offset-2 focus:outline-red-900 ml-3"
-              >
-                <span className="absolute -inset-1.5" />
-                <span className="sr-only">Shopping cart</span>
-                <ShoppingBagIcon aria-hidden="true" className="size-6" />
-                {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-900 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                    {itemCount}
-                  </span>
-                )}
-              </Link>
             </div>
             {/* Mobile Left - Menu Button */}
             <div className="absolute left-0 flex items-center sm:hidden">
@@ -401,21 +463,23 @@ export const Navbar = () => {
               </button>
             </div>
 
-            {/* Mobile Right - Shopping Bag */}
+            {/* Mobile Right - Shopping Bag (only on shop pages) */}
             <div className="absolute right-0 flex items-center sm:hidden">
-              <Link
-                to="/cart"
-                className="relative rounded-full p-2 text-black hover:text-gray-800 focus:outline-2 focus:outline-offset-2 focus:outline-red-900"
-              >
-                <span className="absolute -inset-1.5" />
-                <span className="sr-only">Shopping cart</span>
-                <ShoppingBagIcon aria-hidden="true" className="size-6" />
-                {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-900 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                    {itemCount}
-                  </span>
-                )}
-              </Link>
+              {!isMarketingPage && (
+                <Link
+                  to="/cart"
+                  className="relative rounded-full p-2 text-black hover:text-gray-800 focus:outline-2 focus:outline-offset-2 focus:outline-red-900"
+                >
+                  <span className="absolute -inset-1.5" />
+                  <span className="sr-only">Shopping cart</span>
+                  <ShoppingBagIcon aria-hidden="true" className="size-6" />
+                  {itemCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-900 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                      {itemCount}
+                    </span>
+                  )}
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -451,109 +515,166 @@ export const Navbar = () => {
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-4 pt-4 pb-3 space-y-4">
-            {/* Mobile Search Section */}
-            <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <MagnifyingGlassIcon
-                  className="h-5 w-5 text-gray-400"
-                  aria-hidden="true"
-                />
-              </div>
-              <input
-                type="text"
-                value={mobileSearchQuery}
-                onChange={(e) => setMobileSearchQuery(e.target.value)}
-                className="block w-full rounded-md border-2 border-blue-600 py-2.5 pl-10 pr-3 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm"
-                placeholder="Find Product"
-              />
-            </div>
+            {/* Mobile Search Section - Only show on shop pages */}
+            {!isMarketingPage && (
+              <>
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <MagnifyingGlassIcon
+                      className="h-5 w-5 text-gray-400"
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={mobileSearchQuery}
+                    onChange={(e) => setMobileSearchQuery(e.target.value)}
+                    className="block w-full rounded-md border-2 border-blue-600 py-2.5 pl-10 pr-3 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm"
+                    placeholder="Find Product"
+                  />
+                </div>
 
-            {/* Mobile Search Results */}
-            {(mobileSearchQuery.trim() || isMobileSearching) && (
-              <div className="bg-gray-50 rounded-md">
-                {isMobileSearching ? (
-                  <div className="px-4 py-3 text-sm text-gray-500">
-                    Searching...
+                {/* Mobile Search Results */}
+                {(mobileSearchQuery.trim() || isMobileSearching) && (
+                  <div className="bg-gray-50 rounded-md">
+                    {isMobileSearching ? (
+                      <div className="px-4 py-3 text-sm text-gray-500">
+                        Searching...
+                      </div>
+                    ) : mobileSearchResults.length > 0 ? (
+                      <div>
+                        <p className="px-4 pt-3 pb-2 text-sm text-gray-500">
+                          Results:
+                        </p>
+                        <div className="space-y-2 pb-3">
+                          {mobileSearchResults.map((product) => (
+                            <button
+                              key={product.id}
+                              onClick={() => handleMobileResultClick(product.id)}
+                              className="w-full px-4 py-3 bg-white hover:bg-gray-100 flex items-center gap-3 text-left transition-colors"
+                            >
+                              <div className="w-12 h-12 bg-yellow-100 rounded flex items-center justify-center shrink-0">
+                                <span className="text-2xl">💡</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {product.name}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  $
+                                  {formatCentsToDollars(
+                                    product.variations[0]?.price_money?.amount || 0
+                                  )}
+                                </p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : mobileSearchQuery.trim() ? (
+                      <div className="px-4 py-3 text-sm text-gray-500">
+                        No products found
+                      </div>
+                    ) : null}
                   </div>
-                ) : mobileSearchResults.length > 0 ? (
-                  <div>
-                    <p className="px-4 pt-3 pb-2 text-sm text-gray-500">
-                      Results:
-                    </p>
-                    <div className="space-y-2 pb-3">
-                      {mobileSearchResults.map((product) => (
-                        <button
-                          key={product.id}
-                          onClick={() => handleMobileResultClick(product.id)}
-                          className="w-full px-4 py-3 bg-white hover:bg-gray-100 flex items-center gap-3 text-left transition-colors"
-                        >
-                          <div className="w-12 h-12 bg-yellow-100 rounded flex items-center justify-center flex-shrink-0">
-                            <span className="text-2xl">💡</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {product.name}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              $
-                              {formatCentsToDollars(
-                                product.variations[0]?.price_money?.amount || 0
-                              )}
-                            </p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : mobileSearchQuery.trim() ? (
-                  <div className="px-4 py-3 text-sm text-gray-500">
-                    No products found
-                  </div>
-                ) : null}
-              </div>
+                )}
+              </>
             )}
 
-            {/* Categories Section */}
-            <div className="pt-2">
-              <h3 className="text-xs font-semibold text-gray-900 mb-2">
-                Categories
-              </h3>
-              <div className="space-y-0 divide-y divide-gray-200">
-                {categories.map((category) => (
-                  <Link
-                    key={category.id}
-                    to={`/shop/category/${category.id}`}
-                    onClick={closeMobileMenu}
-                    className="block py-3 text-xs text-gray-900 hover:bg-gray-50 transition-colors"
-                  >
-                    {category.name}
-                  </Link>
-                ))}
+            {/* Categories Section - Only show on shop pages */}
+            {!isMarketingPage && (
+              <div className="pt-2">
+                <h3 className="text-xs font-semibold text-gray-900 mb-2">
+                  Categories
+                </h3>
+                <div className="space-y-0 divide-y divide-gray-200">
+                  {categories.map((category) => (
+                    <Link
+                      key={category.id}
+                      to={`/shop/category/${category.id}`}
+                      onClick={closeMobileMenu}
+                      className="block py-3 text-xs text-gray-900 hover:bg-gray-50 transition-colors"
+                    >
+                      {category.name}
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
           <div className="space-y-2 p-4">
-            <Link
-              to="/shop"
-              onClick={closeMobileMenu}
-              className="block text-xs font-medium text-gray-900"
-            >
-              Shop
-            </Link>
-            <Link
-              to="/request-service"
-              onClick={closeMobileMenu}
-              className="block text-xs font-medium text-gray-900"
-            >
-              Request Service
-            </Link>
-            <Link
-              to="/rent-equipment"
-              onClick={closeMobileMenu}
-              className="block text-xs font-medium text-gray-900"
-            >
-              Rent Equipment
-            </Link>
+            {isMarketingPage ? (
+              <>
+                <Link
+                  to="/about"
+                  onClick={closeMobileMenu}
+                  className="block text-xs font-medium text-gray-900"
+                >
+                  About
+                </Link>
+                <Link
+                  to="/services"
+                  onClick={closeMobileMenu}
+                  className="block text-xs font-medium text-gray-900"
+                >
+                  Services
+                </Link>
+                <Link
+                  to="/projects"
+                  onClick={closeMobileMenu}
+                  className="block text-xs font-medium text-gray-900"
+                >
+                  Projects
+                </Link>
+                <Link
+                  to="/contact"
+                  onClick={closeMobileMenu}
+                  className="block text-xs font-medium text-gray-900"
+                >
+                  Contact
+                </Link>
+                <Link
+                  to="/shop"
+                  onClick={closeMobileMenu}
+                  className="block text-xs font-medium text-red-900"
+                >
+                  Shop Now &rarr;
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/shop"
+                  onClick={closeMobileMenu}
+                  className="block text-xs font-medium text-gray-900"
+                >
+                  Shop Products
+                </Link>
+                <Link
+                  to="/request-service"
+                  onClick={closeMobileMenu}
+                  className="block text-xs font-medium text-gray-900"
+                >
+                  Request Service
+                </Link>
+                <Link
+                  to="/rent-equipment"
+                  onClick={closeMobileMenu}
+                  className="block text-xs font-medium text-gray-900"
+                >
+                  Rent Equipment
+                </Link>
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <Link
+                    to="/"
+                    onClick={closeMobileMenu}
+                    className="block text-xs font-medium text-gray-500"
+                  >
+                    &larr; Back to Main Site
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Admin Section */}

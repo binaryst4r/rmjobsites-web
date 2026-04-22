@@ -20,6 +20,8 @@ export const ProductsByCategory = () => {
     enabled: !!categoryId,
   });
 
+  console.log(productsData);
+
   const category: Category | undefined = categoryData?.category;
   const products: Product[] = productsData?.products || [];
 

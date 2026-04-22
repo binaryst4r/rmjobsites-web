@@ -1,13 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
 import { useCart } from '../lib/cart-context';
 import { useAuth } from '../lib/auth-context';
 import { api } from '../lib/api';
+import type { ShippingRateError } from '../lib/api';
 import { initializeSquarePayments, initializeCard, tokenizeCard, destroyCard } from '../lib/square-payments';
 import FulfillmentSelector from '../components/FulfillmentSelector';
 import PickupDetailsForm from '../components/PickupDetailsForm';
 import type { FulfillmentType } from '../components/FulfillmentSelector';
 import type { PickupDetails } from '../components/PickupDetailsForm';
+
+interface ShippingRate {
+  provider: string;
+  servicelevel: { name: string };
+  amount: string;
+}
 
 interface OrderSummary {
   subtotal: number;
@@ -44,6 +52,31 @@ export function Checkout() {
     time: '10:00',
   });
 
+  // Shipping rate selection
+  const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null);
+
+  const {
+    data: shippingRatesData,
+    isFetching: shippingRatesLoading,
+    isError: shippingRatesIsError,
+    error: shippingRatesError,
+    refetch: refetchShippingRates,
+  } = useQuery({
+    queryKey: ['shippingRates', address, city, state, postalCode, items.map(i => i.variationId + i.quantity).join(',')],
+    queryFn: () => api.getShippingRates(
+      { street1: address, street2: addressLine2 || undefined, city, state, zip: postalCode, country: 'US' },
+      items.map(item => ({ square_catalog_object_id: item.variationId, quantity: item.quantity.toString() }))
+    ),
+    enabled: false,
+  });
+
+  const shippingRates = shippingRatesData?.rates ?? [];
+
+  // Clear selected rate when address changes or switching to pickup
+  useEffect(() => {
+    setSelectedRate(null);
+  }, [address, city, state, postalCode, fulfillmentType]);
+
   // Validation errors
   const [validationErrors, setValidationErrors] = useState<{
     address?: string;
@@ -71,7 +104,11 @@ export function Checkout() {
         await initializeSquarePayments(config);
 
         if (mounted) {
-          await initializeCard('card-container');
+          // Attach to whichever card container is visible (desktop vs mobile layout)
+          const containerId = window.innerWidth >= 1024
+            ? 'card-container-desktop'
+            : 'card-container-mobile';
+          await initializeCard(containerId);
           setCardInitialized(true);
         }
       } catch (err) {
@@ -117,6 +154,14 @@ export function Checkout() {
     }
   }, [items, fulfillmentType]);
 
+  // Derived display values for order summary
+  const displayShipping = selectedRate
+    ? Math.round(parseFloat(selectedRate.amount) * 100)
+    : (orderSummary?.shipping ?? 0);
+  const displayTotal = orderSummary
+    ? orderSummary.subtotal + orderSummary.taxes + displayShipping
+    : 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -130,6 +175,10 @@ export function Checkout() {
       if (!city.trim()) errors.city = 'City is required for shipping';
       if (!state.trim()) errors.state = 'State is required for shipping';
       if (!postalCode.trim()) errors.postalCode = 'Postal code is required for shipping';
+      if (!selectedRate) {
+        setError('Please select a shipping rate before placing your order.');
+        return;
+      }
     } else if (fulfillmentType === 'PICKUP') {
       if (!pickupDetails.date) errors.pickupDate = 'Pickup date is required';
       if (!pickupDetails.time) errors.pickupTime = 'Pickup time is required';
@@ -178,7 +227,8 @@ export function Checkout() {
           postal_code: postalCode,
           country: 'US'
         } : undefined,
-        pickup_details: fulfillmentType === 'PICKUP' ? pickupDetails : undefined
+        pickup_details: fulfillmentType === 'PICKUP' ? pickupDetails : undefined,
+        shipping_cost: selectedRate?.amount,
       });
 
       // Refresh user profile to get updated square_customer_id
@@ -331,6 +381,63 @@ export function Checkout() {
                         <p className="mt-1 text-sm text-red-600">{validationErrors.postalCode}</p>
                       )}
                     </div>
+
+                    {/* Get Shipping Rates */}
+                    <button
+                      type="button"
+                      onClick={() => refetchShippingRates()}
+                      disabled={shippingRatesLoading || !address || !city || !state || !postalCode}
+                      className="w-full bg-blue-600 text-white py-2 rounded font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {shippingRatesLoading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Fetching Rates...
+                        </span>
+                      ) : 'Get Shipping Rates'}
+                    </button>
+
+                    {shippingRatesIsError && (
+                      <p className="text-sm text-red-600">
+                        {(shippingRatesError as ShippingRateError)?.code === 'missing_weight'
+                          ? 'Shipping is not available for one or more items in your cart. Please choose pickup instead.'
+                          : shippingRatesError instanceof Error ? shippingRatesError.message : 'Failed to fetch shipping rates'}
+                      </p>
+                    )}
+
+                    {/* Rate Selection */}
+                    {shippingRates.length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-medium text-gray-700">Select Shipping Method</h3>
+                        {shippingRates.map((rate, index) => (
+                          <label
+                            key={index}
+                            className={`flex items-center justify-between p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                              selectedRate === rate
+                                ? 'border-blue-600 bg-blue-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                name="shipping-rate"
+                                checked={selectedRate === rate}
+                                onChange={() => setSelectedRate(rate)}
+                                className="h-4 w-4 text-blue-600 border-gray-300"
+                              />
+                              <span className="ml-3 text-sm">
+                                {rate.provider} {rate.servicelevel.name}
+                              </span>
+                            </div>
+                            <span className="font-semibold text-sm">${rate.amount}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -361,7 +468,7 @@ export function Checkout() {
                   </div>
                   <div>
                     <label className="block text-sm mb-2">Card Details</label>
-                    <div id="card-container" className="border border-gray-300 rounded p-4"></div>
+                    <div id="card-container-desktop" className="border border-gray-300 rounded p-4"></div>
                   </div>
                 </div>
               </div>
@@ -377,7 +484,7 @@ export function Checkout() {
                 disabled={loading || !cardInitialized}
                 className="w-full bg-black text-white py-4 rounded font-medium hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                {loading ? 'Processing...' : orderSummary ? `Pay ${formatCurrency(orderSummary.total)}` : 'Pay Now'}
+                {loading ? 'Processing...' : orderSummary ? `Pay ${formatCurrency(displayTotal)}` : 'Pay Now'}
               </button>
             </form>
           </div>
@@ -411,13 +518,16 @@ export function Checkout() {
                     <span>Taxes</span>
                     <span>{formatCurrency(orderSummary.taxes)}</span>
                   </div>
-                  <div className="flex justify-between pb-4 border-b border-gray-300">
-                    <span>Shipping</span>
-                    <span>{formatCurrency(orderSummary.shipping)}</span>
-                  </div>
+                  {fulfillmentType === 'SHIPMENT' && (
+                    <div className="flex justify-between">
+                      <span>Shipping</span>
+                      <span>{selectedRate ? formatCurrency(displayShipping) : '—'}</span>
+                    </div>
+                  )}
+                  <div className="pb-4 border-b border-gray-300" />
                   <div className="flex justify-between text-lg font-bold pt-4">
                     <span>Total</span>
-                    <span>{formatCurrency(orderSummary.total)}</span>
+                    <span>{formatCurrency(displayTotal)}</span>
                   </div>
                 </div>
               )}
@@ -461,13 +571,16 @@ export function Checkout() {
                 <span>Taxes</span>
                 <span>{formatCurrency(orderSummary.taxes)}</span>
               </div>
-              <div className="flex justify-between pb-2 border-b border-gray-200">
-                <span>Shipping</span>
-                <span>{formatCurrency(orderSummary.shipping)}</span>
-              </div>
+              {fulfillmentType === 'SHIPMENT' && (
+                <div className="flex justify-between">
+                  <span>Shipping</span>
+                  <span>{selectedRate ? formatCurrency(displayShipping) : '—'}</span>
+                </div>
+              )}
+              <div className="pb-2 border-b border-gray-200" />
               <div className="flex justify-between text-base font-bold pt-2">
                 <span>Total</span>
-                <span>{formatCurrency(orderSummary.total)}</span>
+                <span>{formatCurrency(displayTotal)}</span>
               </div>
             </div>
           )}
@@ -587,6 +700,63 @@ export function Checkout() {
                     <p className="mt-1 text-xs text-red-600">{validationErrors.postalCode}</p>
                   )}
                 </div>
+
+                {/* Get Shipping Rates */}
+                <button
+                  type="button"
+                  onClick={() => refetchShippingRates()}
+                  disabled={shippingRatesLoading || !address || !city || !state || !postalCode}
+                  className="w-full bg-blue-600 text-white py-2 rounded font-medium text-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {shippingRatesLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Fetching Rates...
+                    </span>
+                  ) : 'Get Shipping Rates'}
+                </button>
+
+                {shippingRatesIsError && (
+                  <p className="text-xs text-red-600">
+                    {(shippingRatesError as ShippingRateError)?.code === 'missing_weight'
+                          ? 'Shipping is not available for one or more items in your cart. Please choose pickup instead.'
+                          : shippingRatesError instanceof Error ? shippingRatesError.message : 'Failed to fetch shipping rates'}
+                  </p>
+                )}
+
+                {/* Rate Selection */}
+                {shippingRates.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium text-gray-700">Select Shipping Method</h3>
+                    {shippingRates.map((rate, index) => (
+                      <label
+                        key={index}
+                        className={`flex items-center justify-between p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                          selectedRate === rate
+                            ? 'border-blue-600 bg-blue-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            name="shipping-rate-mobile"
+                            checked={selectedRate === rate}
+                            onChange={() => setSelectedRate(rate)}
+                            className="h-4 w-4 text-blue-600 border-gray-300"
+                          />
+                          <span className="ml-3 text-sm">
+                            {rate.provider} {rate.servicelevel.name}
+                          </span>
+                        </div>
+                        <span className="font-semibold text-sm">${rate.amount}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -617,7 +787,7 @@ export function Checkout() {
               </div>
               <div>
                 <label className="block text-sm mb-1">Card Details</label>
-                <div id="card-container" className="border border-gray-300 rounded p-3"></div>
+                <div id="card-container-mobile" className="border border-gray-300 rounded p-3"></div>
               </div>
             </div>
           </div>
@@ -633,7 +803,7 @@ export function Checkout() {
             disabled={loading || !cardInitialized}
             className="w-full bg-black text-white py-3 rounded font-medium hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {loading ? 'Processing...' : orderSummary ? `Pay ${formatCurrency(orderSummary.total)}` : 'Pay Now'}
+            {loading ? 'Processing...' : orderSummary ? `Pay ${formatCurrency(displayTotal)}` : 'Pay Now'}
           </button>
         </form>
       </div>

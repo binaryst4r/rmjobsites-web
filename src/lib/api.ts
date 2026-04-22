@@ -4,6 +4,10 @@ import type { Customer, UpdateCustomerData, Order, Card } from '../types/custome
 import type { User } from '../types/auth';
 import { getUser } from './cookies';
 
+export interface ShippingRateError extends Error {
+  code?: string;
+}
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 if (!API_URL) {
@@ -144,6 +148,40 @@ export const api = {
     return response.json();
   },
 
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const response = await fetch(`${API_URL}/auth/forgot_password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.errors?.join(', ') || error.error || 'Failed to request password reset');
+    }
+
+    return response.json();
+  },
+
+  async resetPassword(token: string, password: string, password_confirmation: string) {
+    const response = await fetch(`${API_URL}/auth/reset_password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token, password, password_confirmation }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.errors?.join(', ') || error.error || 'Failed to reset password');
+    }
+
+    return response.json();
+  },
+
   async searchProducts(query: string, limit: number = 5) {
     const response = await fetch(`${API_URL}/products?query=${encodeURIComponent(query)}&limit=${limit}`, {
       method: 'GET',
@@ -183,6 +221,44 @@ export const api = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.errors?.join(', ') || error.error || 'Failed to submit equipment rental request');
+    }
+
+    return response.json();
+  },
+
+  async getShippingRates(
+    destination: {
+      street1: string;
+      street2?: string;
+      city: string;
+      state: string;
+      zip: string;
+      country: string;
+    },
+    lineItems: Array<{ square_catalog_object_id: string; quantity: string }>
+  ): Promise<{
+    rates: Array<{
+      provider: string;
+      servicelevel: { name: string };
+      amount: string;
+    }>;
+  }> {
+    const response = await fetch(`${API_URL}/shipping/rates`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        shipping: {
+          destination,
+          line_items: lineItems,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      const err = new Error(error.error || 'Failed to fetch shipping rates');
+      (err as ShippingRateError).code = error.code;
+      throw err;
     }
 
     return response.json();
@@ -240,6 +316,7 @@ export const api = {
       date: string;
       time: string;
     };
+    shipping_cost?: string;
   }) {
     const response = await fetch(`${API_URL}/orders`, {
       method: 'POST',
@@ -323,5 +400,27 @@ export const api = {
       const error = await response.json();
       throw new Error(error.error || 'Failed to delete card');
     }
+  },
+
+  async submitContactForm(data: {
+    name: string;
+    email: string;
+    phone?: string;
+    message: string;
+  }): Promise<{ success: boolean }> {
+    const response = await fetch(`${API_URL}/contact`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ contact: data }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to submit contact form');
+    }
+
+    return response.json();
   },
 };
