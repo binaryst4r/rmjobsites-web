@@ -61,9 +61,7 @@ export default function EquipmentRental() {
   const [formData, setFormData] = useState<EquipmentRentalRequestFormData>(() =>
     getInitialFormData(
       user?.email,
-      // @ts-expect-error optional fields on User
       user?.phone_number,
-      // @ts-expect-error optional fields on User
       user?.company_name,
     ),
   );
@@ -80,9 +78,7 @@ export default function EquipmentRental() {
       setFormData(
         getInitialFormData(
           user?.email,
-          // @ts-expect-error optional fields on User
           user?.phone_number,
-          // @ts-expect-error optional fields on User
           user?.company_name,
         ),
       );

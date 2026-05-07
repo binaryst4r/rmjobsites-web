@@ -139,9 +139,7 @@ export const ServiceRequest = () => {
   const [form, setForm] = useState<ServiceRequestFormData>(() =>
     getInitial(
       user?.email,
-      // @ts-expect-error optional fields on User
       user?.phone_number,
-      // @ts-expect-error optional fields on User
       user?.company_name,
       initialName,
     ),
@@ -158,9 +156,7 @@ export const ServiceRequest = () => {
       setForm(
         getInitial(
           user?.email,
-          // @ts-expect-error optional fields on User
           user?.phone_number,
-          // @ts-expect-error optional fields on User
           user?.company_name,
           initialName,
         ),
