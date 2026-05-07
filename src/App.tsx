@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigationType } from "react-router-dom";
+import { useEffect } from "react";
 import { useAuth } from "./lib/auth-context";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -17,6 +18,7 @@ import EquipmentRental from "./pages/EquipmentRental";
 import { RequireAdmin } from "./components/RequireAdmin";
 import { AdminServiceRequests } from "./pages/admin/ServiceRequests";
 import { AdminRentalRequests } from "./pages/admin/RentalRequests";
+import { AdminUsers } from "./pages/admin/Users";
 import { Cart } from "./pages/Cart";
 import { Checkout } from "./pages/Checkout";
 import { OrderConfirmation } from "./pages/OrderConfirmation";
@@ -24,14 +26,26 @@ import Notification from "./components/Notification";
 import { LandingPage } from "./pages/marketing/LandingPage";
 import { AboutPage } from "./pages/marketing/AboutPage";
 import { ContactPage } from "./pages/marketing/ContactPage";
-import { ProjectsPage } from "./pages/marketing/ProjectsPage";
 import { ServicesPage } from "./pages/marketing/ServicesPage";
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  const navigationType = useNavigationType();
+  useEffect(() => {
+    // Skip POP (browser back/forward) so the browser can restore the prior scroll position.
+    if (navigationType !== "POP") {
+      window.scrollTo(0, 0);
+    }
+  }, [pathname, navigationType]);
+  return null;
+}
 
 function App() {
   const { isAuthenticated } = useAuth();
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Navbar />
       <Notification />
       <Routes>
@@ -39,7 +53,6 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
-        <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/dashboard" element={<Home />} />
 
@@ -79,6 +92,14 @@ function App() {
           element={
             <RequireAdmin>
               <AdminRentalRequests />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <RequireAdmin>
+              <AdminUsers />
             </RequireAdmin>
           }
         />

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { Link, useParams } from "react-router-dom";
+import { ChevronLeftIcon } from "@heroicons/react/24/solid";
 import type { Product } from "../types/Product";
 import type { Category } from "../types/Category";
 import { formatCentsToDollars } from "../lib/money";
@@ -35,6 +36,15 @@ export const ProductsByCategory = () => {
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-5 sm:px-6 lg:px-8">
+      <div className="mb-4">
+        <Link
+          to="/shop"
+          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+        >
+          <ChevronLeftIcon className="w-4 h-4 mr-1" />
+          Back to Categories
+        </Link>
+      </div>
       <h1 className="text-2xl font-bold text-gray-900 text-center pb-5 border-b border-gray-300">
         {category?.name || "Products"}
       </h1>
@@ -47,15 +57,17 @@ export const ProductsByCategory = () => {
           const price = variation?.price_money?.amount;
           return (
             <Link to={`/shop/product/${product.id}`} key={product.id} className="block">
-              {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt={product.name}
-                  className="w-full h-auto object-cover rounded-t-lg"
-                />
-              ) : (
-                <div className="w-full h-44 bg-gray-200" />
-              )}
+              <div className="w-full aspect-square overflow-hidden rounded-t-lg bg-gray-100">
+                {imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200" />
+                )}
+              </div>
               <div className="flex justify-between items-center mt-2">
                 <h2>{product.name}</h2>
                 <p>${formatCentsToDollars(price)}</p>

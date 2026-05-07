@@ -8,7 +8,7 @@ import type { ShippingRateError } from '../lib/api';
 import { initializeSquarePayments, initializeCard, tokenizeCard, destroyCard } from '../lib/square-payments';
 import FulfillmentSelector from '../components/FulfillmentSelector';
 import PickupDetailsForm from '../components/PickupDetailsForm';
-import type { FulfillmentType } from '../components/FulfillmentSelector';
+import type { FulfillmentType, PickupVariant, DeliveryTier } from '../components/FulfillmentSelector';
 import type { PickupDetails } from '../components/PickupDetailsForm';
 
 interface ShippingRate {
@@ -47,10 +47,13 @@ export function Checkout() {
 
   // Fulfillment state
   const [fulfillmentType, setFulfillmentType] = useState<FulfillmentType>('PICKUP');
+  const [pickupVariant, setPickupVariant] = useState<PickupVariant>('normal');
+  const [deliveryTier, setDeliveryTier] = useState<DeliveryTier>('next_day');
   const [pickupDetails, setPickupDetails] = useState<PickupDetails>({
     date: '',
     time: '10:00',
   });
+  const [phoneCallRequestStatus, setPhoneCallRequestStatus] = useState<'idle' | 'loading' | 'success'>('idle');
 
   // Shipping rate selection
   const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null);
@@ -179,7 +182,12 @@ export function Checkout() {
         setError('Please select a shipping rate before placing your order.');
         return;
       }
-    } else if (fulfillmentType === 'PICKUP') {
+    } else if (fulfillmentType === 'DELIVERY') {
+      if (!address.trim()) errors.address = 'Address is required for delivery';
+      if (!city.trim()) errors.city = 'City is required for delivery';
+      if (!state.trim()) errors.state = 'State is required for delivery';
+      if (!postalCode.trim()) errors.postalCode = 'Postal code is required for delivery';
+    } else if (fulfillmentType === 'PICKUP' && pickupVariant === 'normal') {
       if (!pickupDetails.date) errors.pickupDate = 'Pickup date is required';
       if (!pickupDetails.time) errors.pickupTime = 'Pickup time is required';
 
@@ -209,6 +217,8 @@ export function Checkout() {
         quantity: item.quantity.toString()
       }));
 
+      const usesAddress = fulfillmentType === 'SHIPMENT' || fulfillmentType === 'DELIVERY';
+
       // Create order with payment
       const result = await api.createOrder({
         line_items: lineItems,
@@ -219,7 +229,9 @@ export function Checkout() {
           family_name: familyName || undefined
         },
         fulfillment_type: fulfillmentType,
-        shipping_address: fulfillmentType === 'SHIPMENT' ? {
+        pickup_variant: fulfillmentType === 'PICKUP' ? pickupVariant : undefined,
+        delivery_tier: fulfillmentType === 'DELIVERY' ? deliveryTier : undefined,
+        shipping_address: usesAddress ? {
           address_line_1: address,
           address_line_2: addressLine2 || undefined,
           locality: city,
@@ -227,7 +239,7 @@ export function Checkout() {
           postal_code: postalCode,
           country: 'US'
         } : undefined,
-        pickup_details: fulfillmentType === 'PICKUP' ? pickupDetails : undefined,
+        pickup_details: fulfillmentType === 'PICKUP' && pickupVariant === 'normal' ? pickupDetails : undefined,
         shipping_cost: selectedRate?.amount,
       });
 
@@ -255,6 +267,35 @@ export function Checkout() {
 
   const formatCurrency = (cents: number) => {
     return `$${(cents / 100).toFixed(2)}`;
+  };
+
+  const handleRequestPhoneCall = async () => {
+    if (!email) {
+      setError('Please enter your email before requesting a phone call.');
+      return;
+    }
+    setError(null);
+    setPhoneCallRequestStatus('loading');
+    try {
+      await api.requestPhoneCall({
+        customer_info: {
+          email,
+          given_name: givenName || undefined,
+          family_name: familyName || undefined,
+        },
+        line_items: items.map((item) => ({
+          catalog_object_id: item.variationId,
+          quantity: item.quantity.toString(),
+          product_name: item.productName,
+          variation_name: item.variationName,
+          price_cents: item.price,
+        })),
+      });
+      setPhoneCallRequestStatus('success');
+    } catch (err) {
+      setPhoneCallRequestStatus('idle');
+      setError(err instanceof Error ? err.message : 'Failed to submit phone call request.');
+    }
   };
 
   if (items.length === 0) {
@@ -288,10 +329,21 @@ export function Checkout() {
               <FulfillmentSelector
                 selectedType={fulfillmentType}
                 onTypeChange={setFulfillmentType}
+                pickupVariant={pickupVariant}
+                onPickupVariantChange={setPickupVariant}
+                deliveryTier={deliveryTier}
+                onDeliveryTierChange={setDeliveryTier}
+                onRequestPhoneCall={handleRequestPhoneCall}
               />
 
-              {/* Conditional: Pickup Details or Shipping Address */}
-              {fulfillmentType === 'PICKUP' ? (
+              {phoneCallRequestStatus === 'success' && (
+                <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded">
+                  Thanks &mdash; we received your phone call request and will be in touch shortly. No payment was collected.
+                </div>
+              )}
+
+              {/* Conditional: Pickup details, after-hours note, or address form */}
+              {fulfillmentType === 'PICKUP' && pickupVariant === 'normal' && (
                 <PickupDetailsForm
                   pickupDetails={pickupDetails}
                   onPickupDetailsChange={setPickupDetails}
@@ -300,9 +352,23 @@ export function Checkout() {
                     time: validationErrors.pickupTime,
                   }}
                 />
-              ) : (
+              )}
+
+              {fulfillmentType === 'PICKUP' && pickupVariant === 'after_hours' && (
                 <div className="bg-white rounded-lg shadow-sm p-6">
-                  <h2 className="text-lg font-semibold mb-4">Shipping Address</h2>
+                  <h2 className="text-lg font-semibold mb-2">After-hours pickup</h2>
+                  <p className="text-sm text-gray-700">
+                    A team member will reach out at the email and (if provided) phone number on this
+                    order to arrange after-hours pickup details. No date/time is required up front.
+                  </p>
+                </div>
+              )}
+
+              {(fulfillmentType === 'SHIPMENT' || fulfillmentType === 'DELIVERY') && (
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <h2 className="text-lg font-semibold mb-4">
+                    {fulfillmentType === 'DELIVERY' ? 'Delivery Address' : 'Shipping Address'}
+                  </h2>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm mb-2">
@@ -383,6 +449,7 @@ export function Checkout() {
                     </div>
 
                     {/* Get Shipping Rates */}
+                    {fulfillmentType === 'SHIPMENT' && (
                     <button
                       type="button"
                       onClick={() => refetchShippingRates()}
@@ -399,8 +466,9 @@ export function Checkout() {
                         </span>
                       ) : 'Get Shipping Rates'}
                     </button>
+                    )}
 
-                    {shippingRatesIsError && (
+                    {fulfillmentType === 'SHIPMENT' && shippingRatesIsError && (
                       <p className="text-sm text-red-600">
                         {(shippingRatesError as ShippingRateError)?.code === 'missing_weight'
                           ? 'Shipping is not available for one or more items in your cart. Please choose pickup instead.'
@@ -409,7 +477,7 @@ export function Checkout() {
                     )}
 
                     {/* Rate Selection */}
-                    {shippingRates.length > 0 && (
+                    {fulfillmentType === 'SHIPMENT' && shippingRates.length > 0 && (
                       <div className="space-y-2">
                         <h3 className="text-sm font-medium text-gray-700">Select Shipping Method</h3>
                         {shippingRates.map((rate, index) => (
@@ -607,10 +675,21 @@ export function Checkout() {
           <FulfillmentSelector
             selectedType={fulfillmentType}
             onTypeChange={setFulfillmentType}
+            pickupVariant={pickupVariant}
+            onPickupVariantChange={setPickupVariant}
+            deliveryTier={deliveryTier}
+            onDeliveryTierChange={setDeliveryTier}
+            onRequestPhoneCall={handleRequestPhoneCall}
           />
 
-          {/* Conditional: Pickup Details or Shipping Address */}
-          {fulfillmentType === 'PICKUP' ? (
+          {phoneCallRequestStatus === 'success' && (
+            <div className="bg-green-50 border border-green-200 text-green-800 px-3 py-2 rounded text-sm">
+              Thanks &mdash; we received your phone call request and will be in touch shortly. No payment was collected.
+            </div>
+          )}
+
+          {/* Conditional: Pickup details, after-hours note, or address form */}
+          {fulfillmentType === 'PICKUP' && pickupVariant === 'normal' && (
             <PickupDetailsForm
               pickupDetails={pickupDetails}
               onPickupDetailsChange={setPickupDetails}
@@ -619,9 +698,22 @@ export function Checkout() {
                 time: validationErrors.pickupTime,
               }}
             />
-          ) : (
+          )}
+
+          {fulfillmentType === 'PICKUP' && pickupVariant === 'after_hours' && (
             <div className="bg-white rounded-lg shadow-sm p-4">
-              <h2 className="text-lg font-semibold mb-3">Shipping Address</h2>
+              <h2 className="text-lg font-semibold mb-2">After-hours pickup</h2>
+              <p className="text-sm text-gray-700">
+                A team member will reach out to arrange after-hours pickup. No date/time is required up front.
+              </p>
+            </div>
+          )}
+
+          {(fulfillmentType === 'SHIPMENT' || fulfillmentType === 'DELIVERY') && (
+            <div className="bg-white rounded-lg shadow-sm p-4">
+              <h2 className="text-lg font-semibold mb-3">
+                {fulfillmentType === 'DELIVERY' ? 'Delivery Address' : 'Shipping Address'}
+              </h2>
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm mb-1">
@@ -702,6 +794,7 @@ export function Checkout() {
                 </div>
 
                 {/* Get Shipping Rates */}
+                {fulfillmentType === 'SHIPMENT' && (
                 <button
                   type="button"
                   onClick={() => refetchShippingRates()}
@@ -718,8 +811,9 @@ export function Checkout() {
                     </span>
                   ) : 'Get Shipping Rates'}
                 </button>
+                )}
 
-                {shippingRatesIsError && (
+                {fulfillmentType === 'SHIPMENT' && shippingRatesIsError && (
                   <p className="text-xs text-red-600">
                     {(shippingRatesError as ShippingRateError)?.code === 'missing_weight'
                           ? 'Shipping is not available for one or more items in your cart. Please choose pickup instead.'
@@ -728,7 +822,7 @@ export function Checkout() {
                 )}
 
                 {/* Rate Selection */}
-                {shippingRates.length > 0 && (
+                {fulfillmentType === 'SHIPMENT' && shippingRates.length > 0 && (
                   <div className="space-y-2">
                     <h3 className="text-sm font-medium text-gray-700">Select Shipping Method</h3>
                     {shippingRates.map((rate, index) => (

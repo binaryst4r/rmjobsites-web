@@ -4,8 +4,9 @@ import { adminApi } from '../../lib/api';
 interface RentalRequestItem {
   id: number;
   customer_name: string;
+  company_name: string | null;
   customer_email: string;
-  date: string;
+  duration: string | null;
   equipment: string;
   created_at: string;
 }
@@ -46,27 +47,6 @@ export function AdminRentalRequests() {
     );
   }
 
-  // Helper function to format date range
-  const formatDateRange = (dateString: string) => {
-    const dates = dateString.split(' - ');
-    if (dates.length === 2) {
-      const startDate = new Date(dates[0]);
-      const endDate = new Date(dates[1]);
-      const startFormatted = startDate.toLocaleDateString('en-US', {
-        month: 'numeric',
-        day: 'numeric',
-        year: '2-digit',
-      });
-      const endFormatted = endDate.toLocaleDateString('en-US', {
-        month: 'numeric',
-        day: 'numeric',
-        year: '2-digit',
-      });
-      return `${startFormatted} - ${endFormatted}`;
-    }
-    return dateString;
-  };
-
   return (
     <div className="min-h-screen bg-white">
       {/* Desktop Layout */}
@@ -77,7 +57,7 @@ export function AdminRentalRequests() {
           {/* Header Row */}
           <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-500 border-b pb-4">
             <div className="col-span-3">Customer</div>
-            <div className="col-span-2">Date</div>
+            <div className="col-span-2">Duration</div>
             <div className="col-span-6">Equipment</div>
             <div className="col-span-1"></div>
           </div>
@@ -90,10 +70,13 @@ export function AdminRentalRequests() {
             >
               <div className="col-span-3">
                 <div className="font-medium text-blue-600">{request.customer_name}</div>
+                {request.company_name && (
+                  <div className="text-xs text-gray-500 mt-0.5">{request.company_name}</div>
+                )}
                 <div className="text-sm text-gray-500 mt-1">{request.customer_email}</div>
               </div>
               <div className="col-span-2 text-sm">
-                {formatDateRange(request.date)}
+                {request.duration || '—'}
               </div>
               <div className="col-span-6 text-sm">
                 {request.equipment}
@@ -126,7 +109,7 @@ export function AdminRentalRequests() {
             {/* Header Row */}
             <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-500 pb-2 border-b">
               <div className="col-span-4">Customer</div>
-              <div className="col-span-2">Date</div>
+              <div className="col-span-2">Duration</div>
               <div className="col-span-6">Equipment</div>
             </div>
 
@@ -136,10 +119,13 @@ export function AdminRentalRequests() {
                 <div className="grid grid-cols-12 gap-2 text-sm">
                   <div className="col-span-4">
                     <div className="font-medium text-blue-600 text-sm">{request.customer_name}</div>
+                    {request.company_name && (
+                      <div className="text-[10px] text-gray-500">{request.company_name}</div>
+                    )}
                     <div className="text-xs text-gray-500 mt-0.5">{request.customer_email}</div>
                   </div>
                   <div className="col-span-2 text-xs">
-                    {formatDateRange(request.date)}
+                    {request.duration || '—'}
                   </div>
                   <div className="col-span-6 flex items-start justify-between gap-2">
                     <div className="text-xs">{request.equipment}</div>

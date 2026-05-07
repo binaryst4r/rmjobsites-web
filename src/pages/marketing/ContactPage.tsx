@@ -115,7 +115,7 @@ export const ContactPage = () => {
 
                   <div>
                     <label htmlFor="phone" className="label">
-                      Phone (optional)
+                      Phone
                     </label>
                     <input
                       type="tel"
@@ -123,6 +123,7 @@ export const ContactPage = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
+                      required
                       className="input"
                     />
                   </div>
@@ -177,7 +178,7 @@ export const ContactPage = () => {
                     <div>
                       <p className="font-medium text-gray-900">Address</p>
                       <p className="text-gray-600">
-                        5385 Quebec St, Unit B<br />
+                        7204 East 53rd Place <br/>
                         Commerce City, CO 80022
                       </p>
                     </div>
@@ -201,19 +202,28 @@ export const ContactPage = () => {
                     <div>
                       <p className="font-medium text-gray-900">Email</p>
                       <a
-                        href="mailto:Ryan@rmjobsites.com"
+                        href="mailto:support@rmjobsites.com"
                         className="text-red-900 hover:text-red-700 transition-colors"
                       >
-                        Ryan@rmjobsites.com
+                        support@rmjobsites.com
                       </a>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Map placeholder */}
-              <div className="mt-6 bg-gray-200 rounded-lg aspect-video flex items-center justify-center">
-                <p className="text-gray-500">Map placeholder</p>
+              {/* Map */}
+              <div className="mt-6 rounded-lg overflow-hidden aspect-video shadow">
+                <iframe
+                  title="RM Jobsite Solutions location"
+                  src="https://www.google.com/maps?q=7204+East+53rd+Place,+Commerce+City,+CO+80022&output=embed"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
+                />
               </div>
             </div>
           </div>

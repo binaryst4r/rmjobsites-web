@@ -1,9 +1,9 @@
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { Product } from "../types/Product";
 import { formatCentsToDollars } from "../lib/money";
-import { CheckCircleIcon } from "@heroicons/react/24/solid";
+import { CheckCircleIcon, ChevronLeftIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
 import { useCart } from "../lib/cart-context";
 import { useNotification } from "../lib/notification-context";
@@ -53,6 +53,15 @@ export const ProductDetails = () => {
   // Get price from selected variation or first variation
   const price = selectedVariation?.price_money || product.variations[0]?.price_money;
 
+  // If any variation has its own distinct image, keep the rich button-card picker.
+  // Otherwise fall back to a simple dropdown.
+  // TODO: mute out-of-stock variations once a real inventory signal is wired up
+  // (Square's `available_for_booking` is for Appointments, not retail stock).
+  const topImage = product.image_urls[0];
+  const hasDistinctVariantImages = product.variations.some(
+    (v) => v.image_urls?.[0] && v.image_urls[0] !== topImage
+  );
+
   const handleAddToBag = () => {
     if (!selectedVariation) return;
 
@@ -72,9 +81,15 @@ export const ProductDetails = () => {
     <div className="min-h-screen bg-white">
       {/* Mobile Layout */}
       <div className="lg:hidden">
-        {/* Mobile Breadcrumb */}
-        <div className="px-4 py-4 text-sm text-gray-600">
-          Lasers / Sewer Laser
+        {/* Mobile Back to Categories */}
+        <div className="px-4 py-4">
+          <Link
+            to="/shop"
+            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+          >
+            <ChevronLeftIcon className="w-4 h-4 mr-1" />
+            Back to Categories
+          </Link>
         </div>
 
         {/* Mobile Product Title and Price */}
@@ -100,34 +115,55 @@ export const ProductDetails = () => {
           </div>
         </div>
 
+        {/* Mobile Product Description */}
+        {product.description && (
+          <div className="px-4 mb-6 text-gray-700 whitespace-pre-line">
+            {product.description}
+          </div>
+        )}
+
         {/* Mobile Variations */}
         <div className="px-4 mb-6">
           <h3 className="text-lg font-semibold mb-3">Variations</h3>
-          <div className="space-y-3">
-            {product.variations.map((variation) => (
-              <button
-                key={variation.id}
-                onClick={() => setSelectedVariationId(variation.id)}
-                className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                  selectedVariationId === variation.id
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-300 bg-white"
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="font-semibold">{variation.name}</div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      This is some description of the variation.
+          {hasDistinctVariantImages ? (
+            <div className="space-y-3">
+              {product.variations.map((variation) => (
+                <button
+                  key={variation.id}
+                  onClick={() => setSelectedVariationId(variation.id)}
+                  className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                    selectedVariationId === variation.id
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-300 bg-white"
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-semibold">{variation.name}</div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        This is some description of the variation.
+                      </div>
                     </div>
+                    {selectedVariationId === variation.id && (
+                      <CheckCircleIcon className="w-6 h-6 text-blue-500 flex-shrink-0 ml-2" />
+                    )}
                   </div>
-                  {selectedVariationId === variation.id && (
-                    <CheckCircleIcon className="w-6 h-6 text-blue-500 flex-shrink-0 ml-2" />
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <select
+              className="input"
+              value={selectedVariationId ?? ""}
+              onChange={(e) => setSelectedVariationId(e.target.value)}
+            >
+              {product.variations.map((variation) => (
+                <option key={variation.id} value={variation.id}>
+                  {variation.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Mobile Add to Bag Button */}
@@ -144,9 +180,15 @@ export const ProductDetails = () => {
       {/* Desktop Layout */}
       <div className="hidden lg:block">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          {/* Desktop Breadcrumb */}
-          <div className="text-sm text-gray-600 mb-6">
-            Travel / Bags
+          {/* Desktop Back to Categories */}
+          <div className="mb-6">
+            <Link
+              to="/shop"
+              className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+            >
+              <ChevronLeftIcon className="w-4 h-4 mr-1" />
+              Back to Categories
+            </Link>
           </div>
 
           <div className="grid grid-cols-2 gap-12">
@@ -173,34 +215,55 @@ export const ProductDetails = () => {
                 </div>
               </div>
 
+              {/* Desktop Product Description */}
+              {product.description && (
+                <div className="mb-8 text-gray-700 whitespace-pre-line">
+                  {product.description}
+                </div>
+              )}
+
               {/* Desktop Size/Variations */}
               <div className="mb-8">
                 <h3 className="text-lg font-semibold mb-4">Size</h3>
-                <div className="space-y-3">
-                  {product.variations.map((variation) => (
-                    <button
-                      key={variation.id}
-                      onClick={() => setSelectedVariationId(variation.id)}
-                      className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                        selectedVariationId === variation.id
-                          ? "border-red-900 bg-red-50"
-                          : "border-gray-300 bg-white hover:border-gray-400"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="font-semibold">{variation.name}</div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            This is some description of the variation.
+                {hasDistinctVariantImages ? (
+                  <div className="space-y-3">
+                    {product.variations.map((variation) => (
+                      <button
+                        key={variation.id}
+                        onClick={() => setSelectedVariationId(variation.id)}
+                        className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                          selectedVariationId === variation.id
+                            ? "border-red-900 bg-red-50"
+                            : "border-gray-300 bg-white hover:border-gray-400"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="font-semibold">{variation.name}</div>
+                            <div className="text-sm text-gray-600 mt-1">
+                              This is some description of the variation.
+                            </div>
                           </div>
+                          {selectedVariationId === variation.id && (
+                            <CheckCircleIcon className="w-6 h-6 text-red-900 shrink-0 ml-2" />
+                          )}
                         </div>
-                        {selectedVariationId === variation.id && (
-                          <CheckCircleIcon className="w-6 h-6 text-red-900 flex-shrink-0 ml-2" />
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <select
+                    className="input"
+                    value={selectedVariationId ?? ""}
+                    onChange={(e) => setSelectedVariationId(e.target.value)}
+                  >
+                    {product.variations.map((variation) => (
+                      <option key={variation.id} value={variation.id}>
+                        {variation.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {/* Desktop Add to Bag Button */}

@@ -1,29 +1,33 @@
+export type RentalDurationUnit = 'day' | 'week' | 'month';
+
 export interface EquipmentRentalRequest {
   id: number;
   user_id: number | null;
-  customer_first_name: string;
-  customer_last_name: string;
+  company_name: string | null;
+  contact_name: string | null;
+  customer_first_name: string | null;
+  customer_last_name: string | null;
   customer_email: string;
   customer_phone: string;
   equipment_type: string;
-  pickup_date: string;
-  return_date: string;
+  rental_duration_unit: RentalDurationUnit | null;
+  rental_duration_amount: number | null;
   rental_agreement_accepted: boolean;
-  payment_method: string;
+  notes: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface EquipmentRentalRequestFormData {
-  customer_first_name: string;
-  customer_last_name: string;
+  company_name: string;
+  contact_name: string;
   customer_email: string;
   customer_phone: string;
   equipment_type: string;
-  pickup_date: string;
-  return_date: string;
+  rental_duration_unit: RentalDurationUnit | '';
+  rental_duration_amount: string;
   rental_agreement_accepted: boolean;
-  payment_method: string;
+  notes: string;
 }
 
 export interface EquipmentRentalRequestResponse {

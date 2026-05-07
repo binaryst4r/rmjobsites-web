@@ -2,11 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
+import { useCart } from "../../lib/cart-context";
+import { useNotification } from "../../lib/notification-context";
 import type { Order, LineItem } from "../../types/customer";
+import type { Product } from "../../types/Product";
 
 export const OrderHistory = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addItem } = useCart();
+  const { showSuccess, showError } = useNotification();
   const squareCustomerId = user?.square_customer_id;
 
   const { data, isLoading, error } = useQuery<{ orders: Order[] }>({
@@ -33,23 +38,49 @@ export const OrderHistory = () => {
     }).format(amount / 100);
   };
 
-  const handleBuyAgain = (item: LineItem) => {
-    // catalog_object_id is the variation/product ID - navigate to product page
+  const handleBuyAgain = async (item: LineItem) => {
     if (!item.catalog_object_id) return;
-    navigate(`/shop/product/${item.catalog_object_id}`);
+    try {
+      const response = await api.getProductById(item.catalog_object_id);
+      const product: Product | undefined = response?.product;
+      if (!product) {
+        showError("Couldn't find that product anymore.");
+        return;
+      }
+      const variation =
+        product.variations.find((v) => v.id === item.catalog_object_id) ??
+        product.variations[0];
+      if (!variation) {
+        showError("This product has no available variations.");
+        return;
+      }
+      addItem({
+        productId: product.id,
+        variationId: variation.id,
+        productName: product.name,
+        variationName: variation.name,
+        price: variation.price_money.amount,
+        imageUrl:
+          variation.image_urls?.[0] || product.image_urls?.[0] || "",
+      });
+      showSuccess(
+        `${product.name} - ${variation.name} added to cart!`,
+        "Added to Cart"
+      );
+    } catch {
+      showError("Failed to add item to cart.");
+    }
   };
 
   const handleShopSimilar = async (item: LineItem) => {
-    // Fetch product to get category for "shop similar"
     if (!item.catalog_object_id) return;
 
     try {
-      const product = await api.getProductById(item.catalog_object_id);
+      const response = await api.getProductById(item.catalog_object_id);
+      const product: Product | undefined = response?.product;
       if (product?.category_ids && product.category_ids.length > 0) {
-        // Navigate to the first category
         navigate(`/shop/category/${product.category_ids[0]}`);
       } else {
-        // Fallback to main shop page
         navigate('/shop');
       }
     } catch (error) {

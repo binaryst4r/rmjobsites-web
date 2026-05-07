@@ -7,30 +7,35 @@ import {
   CubeIcon,
   HomeModernIcon,
 } from '@heroicons/react/24/outline';
+import denverBg from '../../assets/denver-bg.jpg';
+import fenceConstructionImg from '../../assets/fence-construction.jpg';
+import gradingImg from '../../assets/grading.jpg';
+import snowPlowingImg from '../../assets/snow-plowing.jpg';
+import metalFabricationImg from '../../assets/metal-fabrication.jpg';
 
 const featuredServices = [
   {
     title: 'Construction',
     description: 'Detailed estimates and hands-on communication for fence building and custom furniture projects.',
-    image: 'https://placehold.co/600x400/1f2937/ffffff?text=Construction',
+    image: fenceConstructionImg,
     icon: HomeModernIcon,
   },
   {
     title: 'Grading',
     description: '25+ years of excavation industry experience using GPS technology to determine grades and optimize timelines.',
-    image: 'https://placehold.co/600x400/1f2937/ffffff?text=Grading',
+    image: gradingImg,
     icon: TruckIcon,
   },
   {
     title: 'Snow Plowing',
     description: 'Residential and commercial snow removal services that are well-timed, efficient, and focused on safety.',
-    image: 'https://placehold.co/600x400/1f2937/ffffff?text=Snow+Plowing',
+    image: snowPlowingImg,
     icon: CubeIcon,
   },
   {
     title: 'Metal Fabrication',
     description: 'Team with 15+ years experience offering budget-friendly solutions for projects of any size.',
-    image: 'https://placehold.co/600x400/1f2937/ffffff?text=Metal+Fabrication',
+    image: metalFabricationImg,
     icon: WrenchScrewdriverIcon,
   },
 ];
@@ -46,8 +51,12 @@ export const LandingPage = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gray-900 text-white">
-        <div className="absolute inset-0 bg-gradient-to-r from-gray-900 to-gray-800" />
+      <section className="relative text-white">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${denverBg})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/15" />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
           <div className="max-w-2xl">
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">

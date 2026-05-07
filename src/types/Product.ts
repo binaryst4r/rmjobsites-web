@@ -14,7 +14,8 @@ export type Variation = {
 
 export type Product = {
   id: string;
-  description: string;
+  description: string | null;
+  description_html: string | null;
   abbreviation: string;
   category_ids: string[];
   image_urls: string[];

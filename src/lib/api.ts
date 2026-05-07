@@ -2,6 +2,7 @@ import type { ServiceRequestFormData, ServiceRequestResponse } from '../types/Se
 import type { EquipmentRentalRequestFormData, EquipmentRentalRequestResponse } from '../types/EquipmentRentalRequest';
 import type { Customer, UpdateCustomerData, Order, Card } from '../types/customer';
 import type { User } from '../types/auth';
+import type { AdminUserListParams, AdminUserListResponse } from '../types/adminUser';
 import { getUser } from './cookies';
 
 export interface ShippingRateError extends Error {
@@ -57,6 +58,26 @@ export const adminApi = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to fetch admin users');
+    }
+
+    return response.json();
+  },
+
+  async getUsers(params: AdminUserListParams = {}): Promise<AdminUserListResponse> {
+    const qs = new URLSearchParams();
+    if (params.q) qs.set('q', params.q);
+    if (params.page) qs.set('page', String(params.page));
+    if (params.per_page) qs.set('per_page', String(params.per_page));
+
+    const query = qs.toString();
+    const response = await fetch(`${API_URL}/users${query ? `?${query}` : ''}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch users');
     }
 
     return response.json();
@@ -266,7 +287,7 @@ export const api = {
 
   async calculateOrder(
     lineItems: Array<{ catalog_object_id: string; quantity: string }>,
-    fulfillmentType: 'PICKUP' | 'SHIPMENT' = 'PICKUP'
+    fulfillmentType: 'PICKUP' | 'DELIVERY' | 'SHIPMENT' = 'PICKUP'
   ) {
     const response = await fetch(`${API_URL}/orders/calculate`, {
       method: 'POST',
@@ -303,7 +324,9 @@ export const api = {
       given_name?: string;
       family_name?: string;
     };
-    fulfillment_type?: 'PICKUP' | 'SHIPMENT';
+    fulfillment_type?: 'PICKUP' | 'DELIVERY' | 'SHIPMENT';
+    pickup_variant?: 'normal' | 'after_hours';
+    delivery_tier?: 'next_day' | 'two_day' | 'three_day';
     shipping_address?: {
       address_line_1?: string;
       address_line_2?: string;
@@ -327,6 +350,25 @@ export const api = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to create order');
+    }
+
+    return response.json();
+  },
+
+  async requestPhoneCall(data: {
+    customer_info: { email: string; given_name?: string; family_name?: string; phone?: string };
+    line_items: Array<{ catalog_object_id: string; quantity: string; product_name?: string; variation_name?: string; price_cents?: number }>;
+    notes?: string;
+  }) {
+    const response = await fetch(`${API_URL}/orders/phone_call_request`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to submit phone call request');
     }
 
     return response.json();

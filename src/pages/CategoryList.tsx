@@ -26,11 +26,15 @@ export const CategoryList = () => {
           const imageUrl = category.image_urls[0];
           return (
           <div role="button" onClick={() => handleCategoryClick(category)} key={category.id} className="flex flex-col">
-            {imageUrl ? (
-              <img src={imageUrl} alt={category.name} className="w-full h-auto object-cover rounded-t-lg" />
-            ) : (
-              <div className="w-full h-36 bg-gray-200 rounded-t-lg" />
-            )}
+            <div className="aspect-square w-full overflow-hidden rounded-t-lg bg-gray-200">
+              {imageUrl && (
+                <img
+                  src={imageUrl}
+                  alt={category.name}
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
             <h2 className="text-base font-bold text-gray-900 mt-2">{category.name}</h2>
           </div>
         )})}

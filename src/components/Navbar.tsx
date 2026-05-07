@@ -5,6 +5,7 @@ import { useCategories } from "../lib/categories-context";
 import { useCart } from "../lib/cart-context";
 import { MagnifyingGlassIcon, UserIcon } from "@heroicons/react/24/solid";
 import { ShoppingBagIcon } from "@heroicons/react/24/solid";
+import { PhotoIcon } from "@heroicons/react/24/outline";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { api } from "../lib/api";
@@ -20,7 +21,7 @@ export const Navbar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Determine if we're on a marketing page or shop page
-  const marketingPaths = ['/', '/about', '/contact', '/projects', '/services'];
+  const marketingPaths = ['/', '/about', '/contact', '/services'];
   const isMarketingPage = marketingPaths.includes(location.pathname);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
@@ -137,14 +138,14 @@ export const Navbar = () => {
     setIsSearchOpen(false);
     setSearchQuery("");
     setSearchResults([]);
-    navigate(`/products/${productId}`);
+    navigate(`/shop/product/${productId}`);
   };
 
   const handleMobileResultClick = (productId: string) => {
     setMobileSearchQuery("");
     setMobileSearchResults([]);
     setIsMobileMenuOpen(false);
-    navigate(`/products/${productId}`);
+    navigate(`/shop/product/${productId}`);
   };
 
   const handleMobileMenuToggle = () => {
@@ -184,7 +185,7 @@ export const Navbar = () => {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-center items-center relative">
             {/* Desktop Logo - Left */}
-            <div className="hidden sm:flex absolute left-0">
+            <Link to="/" className="hidden sm:flex absolute left-0">
               <div className="flex shrink-0 items-center">
                 <img
                   alt="Your Company"
@@ -192,7 +193,7 @@ export const Navbar = () => {
                   className="h-8 w-auto"
                 />
               </div>
-            </div>
+            </Link>
 
             {/* Mobile Logo - Center */}
             <div className="flex sm:hidden">
@@ -230,16 +231,6 @@ export const Navbar = () => {
                         }`}
                       >
                         Services
-                      </Link>
-                      <Link
-                        to="/projects"
-                        className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
-                          location.pathname === '/projects'
-                            ? 'border-red-900 text-gray-900'
-                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                        }`}
-                      >
-                        Projects
                       </Link>
                       <Link
                         to="/contact"
@@ -331,7 +322,22 @@ export const Navbar = () => {
                               className="w-full px-4 py-3 hover:bg-gray-50 flex items-center justify-between text-left transition-colors"
                             >
                               <div className="flex items-center gap-3">
-                                <span className="text-2xl">💡</span>
+                                {(() => {
+                                  const imgSrc =
+                                    product.variations?.[0]?.image_urls?.[0] ||
+                                    product.image_urls?.[0];
+                                  return imgSrc ? (
+                                    <img
+                                      src={imgSrc}
+                                      alt={product.name}
+                                      className="w-10 h-10 object-cover rounded shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center shrink-0">
+                                      <PhotoIcon className="w-5 h-5 text-gray-400" />
+                                    </div>
+                                  );
+                                })()}
                                 <div>
                                   <p className="text-sm font-medium text-gray-900">
                                     {product.name}
@@ -421,6 +427,16 @@ export const Navbar = () => {
                               className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
                             >
                               View Rental Requests
+                            </Link>
+                          </MenuItem>
+                        )}
+                        {user.admin && (
+                          <MenuItem>
+                            <Link
+                              to="/admin/users"
+                              className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-gray-100 data-focus:outline-hidden"
+                            >
+                              User Directory
                             </Link>
                           </MenuItem>
                         )}
@@ -553,9 +569,22 @@ export const Navbar = () => {
                               onClick={() => handleMobileResultClick(product.id)}
                               className="w-full px-4 py-3 bg-white hover:bg-gray-100 flex items-center gap-3 text-left transition-colors"
                             >
-                              <div className="w-12 h-12 bg-yellow-100 rounded flex items-center justify-center shrink-0">
-                                <span className="text-2xl">💡</span>
-                              </div>
+                              {(() => {
+                                const imgSrc =
+                                  product.variations?.[0]?.image_urls?.[0] ||
+                                  product.image_urls?.[0];
+                                return imgSrc ? (
+                                  <img
+                                    src={imgSrc}
+                                    alt={product.name}
+                                    className="w-12 h-12 object-cover rounded shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center shrink-0">
+                                    <PhotoIcon className="w-6 h-6 text-gray-400" />
+                                  </div>
+                                );
+                              })()}
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-gray-900 truncate">
                                   {product.name}
@@ -618,13 +647,6 @@ export const Navbar = () => {
                   className="block text-xs font-medium text-gray-900"
                 >
                   Services
-                </Link>
-                <Link
-                  to="/projects"
-                  onClick={closeMobileMenu}
-                  className="block text-xs font-medium text-gray-900"
-                >
-                  Projects
                 </Link>
                 <Link
                   to="/contact"
@@ -697,6 +719,13 @@ export const Navbar = () => {
                   className="block text-xs font-medium text-gray-900"
                 >
                   View Rental Requests
+                </Link>
+                <Link
+                  to="/admin/users"
+                  onClick={closeMobileMenu}
+                  className="block text-xs font-medium text-gray-900"
+                >
+                  User Directory
                 </Link>
               </div>
             </div>
